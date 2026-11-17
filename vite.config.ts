@@ -4,7 +4,9 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  //server: {
+  server: {
+    // Fallback на index.html для SPA-роутинга (BrowserRouter)
+    historyApiFallback: true,
     //proxy: {
       //'/api': {
         //target: 'https://localhost:7218',
@@ -13,5 +15,5 @@ export default defineConfig({
         //rewrite: (path) => path.replace(/^\/api/, '/api')
       //}
     //}
-  //}
+  }
 })

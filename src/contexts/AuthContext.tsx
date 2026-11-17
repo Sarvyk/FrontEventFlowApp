@@ -4,6 +4,7 @@ import { jwtService } from '../services/jwtService';
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoadingAuth: boolean;
   login: (token: string, refreshToken: string, expiresAt?: Date | string) => void;
   logout: () => void;
   checkAuthStatus: () => void;
@@ -31,18 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
 
   useEffect(() => {
-    // Проверяем статус при монтировании
     checkAuthStatus();
+    setIsLoadingAuth(false);
 
-    // Подписываемся на изменения в localStorage
     const handleStorageChange = () => {
       checkAuthStatus();
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
@@ -51,14 +52,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAuthStatus = () => {
     const { token } = authService.getAuthTokens();
     const isTokenValid = token && !authService.isTokenExpired() && !jwtService.isTokenExpired(token);
-    
+
     setIsAuthenticated(!!isTokenValid);
-    
+
     if (token && isTokenValid) {
       // Получаем роли пользователя из токена
       const roles = jwtService.getUserRoles(token);
       setUserRoles(roles);
-      
+
       // Получаем дополнительную информацию о пользователе
       setUsername(jwtService.getUsername(token));
       setUserEmail(jwtService.getUserEmail(token));
@@ -87,11 +88,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hasRole = (role: string) => {
-    return userRoles.includes(role);
+    return userRoles.some(userRole => userRole.toLowerCase() === role.toLowerCase());
   };
 
   const hasAnyRole = (roles: string[]) => {
-    return userRoles.some(userRole => roles.includes(userRole));
+    return userRoles.some(userRole => roles.some(role => role.toLowerCase() === userRole.toLowerCase()));
   };
 
   const getUsername = () => {
@@ -107,10 +108,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      login, 
-      logout, 
+    <AuthContext.Provider value={{
+      isAuthenticated,
+      isLoadingAuth,
+      login,
+      logout,
       checkAuthStatus,
       getUserRoles,
       hasRole,
