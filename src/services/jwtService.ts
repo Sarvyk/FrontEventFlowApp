@@ -12,6 +12,7 @@ export interface DecodedToken {
 export interface TokenWithRoles extends DecodedToken {
   role?: string | string[];
   roles?: string[];
+  'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string | string[];
 }
 
 export const jwtService = {
@@ -50,7 +51,7 @@ export const jwtService = {
   getUserRoles(token: string): string[] {
     const decoded = this.decodeToken(token);
     if (!decoded) return [];
-    
+
     // Проверяем разные возможные поля для ролей
     if (Array.isArray(decoded.role)) {
       return decoded.role;
@@ -61,7 +62,15 @@ export const jwtService = {
     } else if (typeof decoded.roles === 'string') {
       return [decoded.roles];
     }
-    
+
+    // ASP.NET Identity claim URI
+    const aspRole = decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    if (Array.isArray(aspRole)) {
+      return aspRole;
+    } else if (typeof aspRole === 'string') {
+      return [aspRole];
+    }
+
     return [];
   },
 

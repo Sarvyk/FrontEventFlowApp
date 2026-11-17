@@ -17,11 +17,19 @@ EventFlow - это веб-приложение для организации и 
     - `Auth/` - Компоненты авторизации
       - `LoginWrapper.tsx` - Обертка для компонента входа, проверяет авторизацию пользователя
       - `RegisterWrapper.tsx` - Обертка для компонента регистрации, проверяет авторизацию пользователя
+      - `ProtectedRoute.tsx` - Компонент защищённого маршрута, проверяет авторизацию и перенаправляет на `/login` если пользователь не авторизован
     - `Header.tsx` - Компонент навигации
     - `Profile.tsx` - Компонент отображения профиля пользователя
   - `pages/` - Страницы приложения
     - `HomePage.tsx` - Главная страница приложения
+    - `EventListPage.tsx` - Страница со списком мероприятий с пагинацией
+    - `OrganizerApplication.tsx` - Страница подачи заявки на организатора
+    - `AdminPanel.tsx` - Страница админ-панели для управления заявками на роль организатора
   - `services/` - Сервисы для работы с API
+    - `eventListService.ts` - Сервис для получения списка мероприятий с пагинацией
+    - `jwtService.ts` - Сервис для декодирования JWT токенов, проверки истечения и получения ролей пользователя
+  - `types/` - TypeScript типы
+    - `event.ts` - Типы EventDto, EventsResponse
   - `assets/` - Статические файлы (изображения)
   - `utils/` - Вспомогательные функции
   - `contexts/` - Контексты React
@@ -87,9 +95,78 @@ EventFlow - это веб-приложение для организации и 
 - Используется для отслеживания статуса аутентификации пользователя
 - Обеспечивает обновление состояния при изменении токенов в localStorage
 
-## Защита от прямого доступа к страницам авторизации
+### Защищённый маршрут (ProtectedRoute)
+- Файл: `src/components/Auth/ProtectedRoute.tsx`
+- Компонент обёртки маршрута, проверяющий статус авторизации через контекст AuthContext
+- Если пользователь не авторизован — перенаправляет на страницу `/login`
+- Используется для защиты маршрутов `/profile` и `/organizer-application`
 
-Для предотвращения прямого доступа к страницам входа и регистрации для уже авторизованных пользователей реализована следующая логика:
+### Страница списка мероприятий (EventListPage)
+- Файл: `src/pages/EventListPage.tsx`
+- Отображает пагинированный список всех доступных мероприятий
+- Поддерживает изменение размера страницы (5, 10, 20, 50 записей)
+- Использует сервис `eventListService.getEvents()` по эндпоинту `/Event?page=&pageSize=`
+
+### Страница заявки на организатора (OrganizerApplication)
+- Файл: `src/pages/OrganizerApplication.tsx`
+- Форма для подачи заявки на получение роли организатора
+- Поля: название компании, описание, веб-сайт (все необязательные)
+- После успешной отправки перенаправляет пользователя в профиль через 3 секунды
+- Использует сервис `organizerService.createApplication()` по эндпоинту `/Organizer`
+
+### Админ-панель (AdminPanel)
+- Файл: `src/pages/AdminPanel.tsx`
+- Страница для администраторов, доступная только при роли Admin
+- Отображает таблицу всех заявок на роль организатора
+- Поддерживает действия: принять или отклонить заявку
+- Обновляет статус заявки через сервис `organizerService.updateApplicationStatus()`
+
+## Маршрутизация
+
+В приложении реализована следующая маршрутизация:
+- `/` — Главная страница (HomePage)
+- `/events` — Список мероприятий (EventListPage, публичный маршрут)
+- `/login` — Страница входа (LoginWrapper)
+- `/register` — Страница регистрации (RegisterWrapper)
+- `/profile` — Профиль пользователя (ProtectedRoute → Profile)
+- `/organizer-application` — Заявка на организатора (ProtectedRoute → OrganizerApplication)
+- `/admin` — Админ-панель управления заявками на организатора (ProtectedRoute adminOnly → AdminPanel, только для роли Admin)
+
+## Сервисы API
+
+### eventListService.ts
+- Файл: `src/services/eventListService.ts`
+- Сервис для получения списка мероприятий с пагинацией
+- Методы:
+  - getEvents: Получение списка мероприятий (поддерживает page и pageSize параметры)
+
+### jwtService.ts
+- Файл: `src/services/jwtService.ts`
+- Сервис для работы с JWT токенами через библиотеку `jwt-decode`
+- Методы:
+  - decodeToken: Декодирование JWT токена
+  - isTokenExpired: Проверка истечения срока действия токена
+  - getUserRoles: Получение массива ролей пользователя из токена
+  - hasRole: Проверка наличия указанной роли у пользователя
+  - hasAnyRole: Проверка наличия хотя бы одной из указанных ролей
+  - getUsername: Получение имени пользователя из токена
+  - getUserEmail: Получение email пользователя из токена
+  - getUserId: Получение идентификатора пользователя из токена
+
+### authService.ts
+- Файл: `src/services/authService.ts`
+- Сервис авторизации пользователя
+- Методы:
+  - register: Регистрация нового пользователя
+  - login: Авторизация по Email и паролю
+  - refreshToken: Обновление токена авторизации
+  - confirmEmail: Подтверждение email
+  - saveAuthTokens: Сохранение токенов в localStorage с временем истечения
+  - getAuthTokens: Получение токенов из localStorage
+  - clearAuthTokens: Удаление токенов
+  - isTokenExpired: Проверка срока действия токена
+
+## Защита от прямого доступа к страницам авторизации
 - При попытке перехода на страницу `/login` или `/register` с действительным токеном, пользователь автоматически перенаправляется на главную страницу
 - Страницы авторизации отображаются только для неавторизованных пользователей
 
@@ -143,8 +220,10 @@ EventFlow - это веб-приложение для организации и 
 - Файл: `src/services/organizerService.ts`
 - Сервис для подачи заявок на организатора
 - Методы:
-  - applyAsOrganizer: Подать заявку на организатора
   - getMyApplication: Получить свою заявку на организатора
+  - createApplication: Подать заявку на организатора
+  - getAllApplications: Получить все заявки (админка, с пагинацией)
+  - updateApplicationStatus: Обновить статус заявки (isVerified + reason)
 
 ### registrationService.ts
 - Файл: `src/services/registrationService.ts`
@@ -177,6 +256,7 @@ EventFlow - это веб-приложение для организации и 
 - `react` - Библиотека для создания пользовательских интерфейсов
 - `react-dom` - DOM-рендеринг для React
 - `react-router-dom` - Маршрутизация в React
+- `jwt-decode` - Для декодирования JWT токенов на клиенте
 
 ### Зависимости разработки:
 - `@vitejs/plugin-react` - Плагин для Vite для React
@@ -206,6 +286,9 @@ EventFlow - это веб-приложение для организации и 
 ### Organizer endpoints:
 - POST `/Organizer` - Подать заявку на организатора
 - GET `/Organizer/my` - Получить свою заявку на организатора
+- GET `/admin/Organizer?offset=&count=` - Получить все заявки (только для Admin)
+  Возвращает `{ items: OrganizerDto[], totalCount: number }` где `OrganizerDto` содержит поля: id, userId, companyName, description, webSite, isVerified, isDelete, reason, eventsCount, user (firstName, lastName, email, phoneNumber)
+- PUT `/admin/Organizer/{id}` - Обновить статус заявки (только для Admin). Тело запроса: `{ isVerified: boolean, reason?: string }`
 
 ### Registration endpoints:
 - POST `/Registration/{eventId}` - Регистрация на мероприятие
@@ -249,3 +332,13 @@ EventFlow - это веб-приложение для организации и 
 
 ### Стили авторизации
 - `src/components/Auth/Auth.css` - Стили для компонентов авторизации (формы входа и регистрации)
+
+### Дополнительные CSS файлы
+- `src/App.css` - Основные стили приложения
+- `src/index.css` - Глобальные стили (сброс стилей, базовые настройки)
+- `src/components/Header.css` - Стили компонента навигации
+- `src/components/Profile.css` - Стили страницы профиля пользователя
+- `src/pages/HomePage.css` - Стили главной страницы
+- `src/pages/EventListPage.css` - Стили страницы списка мероприятий с пагинацией
+- `src/pages/OrganizerApplication.css` - Стили страницы заявки на организатора
+- `src/pages/AdminPanel.css` - Стили страницы админ-панели управления заявками

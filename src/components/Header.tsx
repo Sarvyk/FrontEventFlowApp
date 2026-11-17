@@ -4,8 +4,9 @@ import './Header.css';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header: React.FC = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, hasRole, getUserRoles, logout } = useAuth();
   const navigate = useNavigate();
+  const roles = getUserRoles();
 
   const handleLogout = () => {
     logout();
@@ -37,6 +38,14 @@ const Header: React.FC = () => {
               <>
                 <li className="header-nav-item">
                   <Link to="/profile" className="header-nav-link">Профиль</Link>
+                </li>
+                {hasRole('Admin') && (
+                  <li className="header-nav-item">
+                    <Link to="/admin" className="header-nav-link">Админ-панель</Link>
+                  </li>
+                )}
+                <li className="header-nav-item header-debug" title={`Роли: [${roles.join(', ')}] | Admin: ${hasRole('Admin')}`}>
+                  {isAuthenticated ? `👤 ${roles.length > 0 ? roles[0] : 'User'}` : ''}
                 </li>
                 <li className="header-nav-item">
                   <button onClick={handleLogout} className="header-nav-link button-link">Выйти</button>

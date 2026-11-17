@@ -6,6 +6,7 @@ import LoginWrapper from './components/Auth/LoginWrapper';
 import Profile from './components/Profile';
 import OrganizerApplication from './pages/OrganizerApplication';
 import EventListPage from './pages/EventListPage';
+import AdminPanel from './pages/AdminPanel';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import './App.css';
@@ -31,6 +32,11 @@ function App() {
               <Route path="/organizer-application" element={
                 <ProtectedRoute>
                   <OrganizerApplication />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute adminOnly>
+                  <AdminPanel />
                 </ProtectedRoute>
               } />
             </Routes>
