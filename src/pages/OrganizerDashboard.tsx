@@ -21,8 +21,14 @@ const getApiErrorMessage = (err: unknown): string => {
 
 interface FormErrors {
   title?: string;
+  description?: string;
   startDate?: string;
   endDate?: string;
+  city?: string;
+  street?: string;
+  house?: string;
+  apartment?: string;
+  price?: string;
   maxParticipants?: string;
 }
 
@@ -144,23 +150,85 @@ const OrganizerDashboard: React.FC = () => {
   // ---- Валидация ----
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
-    if (!formData.Title.trim()) errors.title = 'Название обязательно';
-    if (!formData.Start || formData.Start.length < 10) errors.startDate = 'Укажите дату начала';
-    if (!formData.End || formData.End.length < 10) errors.endDate = 'Укажите дату окончания';
-    if (formData.Start && formData.End) {
+
+    // Title
+    if (!formData.Title.trim()) {
+      errors.title = 'Название мероприятия обязательно';
+    } else if (formData.Title.length < 3) {
+      errors.title = 'Название должно содержать минимум 3 символа';
+    } else if (formData.Title.length > 200) {
+      errors.title = 'Название не должно превышать 200 символов';
+    }
+
+    // Description
+    if (!formData.Description.trim()) {
+      errors.description = 'Описание обязательно';
+    } else if (formData.Description.length > 2000) {
+      errors.description = 'Описание не должно превышать 2000 символов';
+    }
+
+    // Start date
+    if (!formData.Start || formData.Start.length < 10) {
+      errors.startDate = 'Дата начала обязательна';
+    } else {
       const start = new Date(formData.Start).getTime();
-      const end = new Date(formData.End).getTime();
-      if (isNaN(start) || isNaN(end)) {
+      if (isNaN(start)) {
         errors.startDate = 'Некорректная дата начала';
-        errors.endDate = 'Некорректная дата окончания';
-      } else if (start > end) {
-        errors.endDate = 'Дата окончания не может быть раньше даты начала';
-      } else if (start < new Date('2000-01-01').getTime() || end < new Date('2000-01-01').getTime()) {
-        errors.startDate = 'Укажите корректную дату (после 2000 года)';
-        errors.endDate = 'Укажите корректную дату (после 2000 года)';
+      } else if (!editingEvent && start < Date.now()) {
+        errors.startDate = 'Дата начала должна быть в будущем';
       }
     }
-    if (formData.maxParticipants < 1) errors.maxParticipants = 'Минимум 1 участник';
+
+    // End date
+    if (!formData.End || formData.End.length < 10) {
+      errors.endDate = 'Дата окончания обязательна';
+    } else {
+      const start = new Date(formData.Start).getTime();
+      const end = new Date(formData.End).getTime();
+      if (isNaN(end)) {
+        errors.endDate = 'Некорректная дата окончания';
+      } else if (!formData.Start || formData.Start.length < 10) {
+        // start already validated above, but guard here for safety
+      } else if (end <= start) {
+        errors.endDate = 'Дата окончания должна быть позже даты начала';
+      } else if (start === end) {
+        errors.startDate = 'Дата начала и окончания не могут совпадать';
+      }
+    }
+
+    // City
+    if (!formData.City.trim()) {
+      errors.city = 'Город обязателен';
+    } else if (formData.City.length > 100) {
+      errors.city = 'Название города не должно превышать 100 символов';
+    }
+
+    // Address: Street, House, Apartment — all required
+    const addressParts = [formData.Street, formData.House, formData.Apartment];
+    if (!addressParts.some(p => p.trim())) {
+      errors.street = 'Адрес обязателен';
+      errors.house = 'Адрес обязателен';
+      errors.apartment = 'Адрес обязателен';
+    } else {
+      const combinedAddress = addressParts.filter(Boolean).join(', ');
+      if (combinedAddress.length > 300) {
+        errors.street = 'Адрес не должен превышать 300 символов';
+      }
+    }
+
+    // Price
+    if (formData.Price < 0) {
+      errors.price = 'Цена не может быть отрицательной';
+    }
+
+    // Max participants
+    const maxP = parseInt(formData.maxParticipants as unknown as string) || 1;
+    if (maxP <= 0) {
+      errors.maxParticipants = 'Количество участников должно быть больше 0';
+    } else if (maxP > 100000) {
+      errors.maxParticipants = 'Количество участников слишком велико';
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -232,7 +300,7 @@ const OrganizerDashboard: React.FC = () => {
     };
     const propName = keyMap[name] ?? (name as keyof EventData);
     setFormData(prev => {
-      if (propName === 'maxParticipants') return { ...prev, [propName]: Math.max(1, parseInt(value) || 1) };
+      if (propName === 'maxParticipants') return { ...prev, [propName]: Math.min(100000, Math.max(1, parseInt(value) || 1)) };
       if (propName === 'Price') return { ...prev, [propName]: parseFloat(value) || 0 };
       if (propName === 'type') {
         return { ...prev, [propName]: value };
@@ -348,20 +416,24 @@ const OrganizerDashboard: React.FC = () => {
                   name="title"
                   value={formData.Title}
                   onChange={handleChange}
+                  maxLength={200}
                   className={formErrors.title ? 'input-error' : ''}
                 />
                 {formErrors.title && <span className="field-error">{formErrors.title}</span>}
               </div>
 
               <div className="form-group">
-                <label htmlFor="description">Описание</label>
+                <label htmlFor="description">Описание *</label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.Description}
                   onChange={handleChange}
                   rows={3}
+                  maxLength={2000}
+                  className={formErrors.description ? 'input-error' : ''}
                 />
+                {formErrors.description && <span className="field-error">{formErrors.description}</span>}
               </div>
 
               <div className="form-group">
@@ -411,50 +483,62 @@ const OrganizerDashboard: React.FC = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="city">Город</label>
+                  <label htmlFor="city">Город *</label>
                   <input
                     type="text"
                     id="city"
                     name="city"
                     value={formData.City}
                     onChange={handleChange}
+                    maxLength={100}
+                    className={formErrors.city ? 'input-error' : ''}
                   />
+                  {formErrors.city && <span className="field-error">{formErrors.city}</span>}
                 </div>
                 <div className="form-group">
-                  <label htmlFor="street">Улица</label>
+                  <label htmlFor="street">Улица *</label>
                   <input
                     type="text"
                     id="street"
                     name="street"
                     value={formData.Street}
                     onChange={handleChange}
+                    maxLength={100}
+                    className={formErrors.street ? 'input-error' : ''}
                   />
+                  {formErrors.street && <span className="field-error">{formErrors.street}</span>}
                 </div>
                 <div className="form-group">
-                  <label htmlFor="house">Дом</label>
+                  <label htmlFor="house">Дом *</label>
                   <input
                     type="text"
                     id="house"
                     name="house"
                     value={formData.House}
                     onChange={handleChange}
+                    maxLength={20}
+                    className={formErrors.house ? 'input-error' : ''}
                   />
+                  {formErrors.house && <span className="field-error">{formErrors.house}</span>}
                 </div>
                 <div className="form-group">
-                  <label htmlFor="apartment">Квартира</label>
+                  <label htmlFor="apartment">Квартира *</label>
                   <input
                     type="text"
                     id="apartment"
                     name="apartment"
                     value={formData.Apartment}
                     onChange={handleChange}
+                    maxLength={10}
+                    className={formErrors.apartment ? 'input-error' : ''}
                   />
+                  {formErrors.apartment && <span className="field-error">{formErrors.apartment}</span>}
                 </div>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="price">Цена (руб.)</label>
+                  <label htmlFor="price">Цена (руб.) *</label>
                   <input
                     type="number"
                     id="price"
@@ -463,18 +547,23 @@ const OrganizerDashboard: React.FC = () => {
                     step={0.01}
                     value={formData.Price}
                     onChange={handleChange}
+                    className={formErrors.price ? 'input-error' : ''}
                   />
+                  {formErrors.price && <span className="field-error">{formErrors.price}</span>}
                 </div>
                 <div className="form-group">
-                  <label htmlFor="maxParticipants">Макс. участников</label>
+                  <label htmlFor="maxParticipants">Макс. участников *</label>
                   <input
                     type="number"
                     id="maxParticipants"
                     name="maxParticipants"
                     min={1}
+                    max={100000}
                     value={formData.maxParticipants}
                     onChange={handleChange}
+                    className={formErrors.maxParticipants ? 'input-error' : ''}
                   />
+                  {formErrors.maxParticipants && <span className="field-error">{formErrors.maxParticipants}</span>}
                 </div>
               </div>
 
