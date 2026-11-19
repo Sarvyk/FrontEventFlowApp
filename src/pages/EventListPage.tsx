@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { eventListService } from '../services/eventListService';
+import { eventListService, type EventsResponse } from '../services/eventListService';
 import { type EventDto } from '../types/event';
 import './EventListPage.css';
 
@@ -8,8 +8,11 @@ interface EventListProps {
   pageSize?: number;
 }
 
+const PAGE_SIZES = [5, 10, 20, 50];
+
 const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) => {
   const [events, setEvents] = useState<EventDto[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(page);
@@ -19,12 +22,14 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const data: EventDto[] = await eventListService.getEvents(currentPage, currentPageSize);
-        setEvents(data);
+        const response: EventsResponse = await eventListService.getEvents(currentPage, currentPageSize);
+        setEvents(response.items ?? []);
+        setTotalCount(response.totalCount ?? 0);
       } catch (err) {
         setError('Ошибка при загрузке мероприятий');
         console.error('Error fetching events:', err);
         setEvents([]);
+        setTotalCount(0);
       } finally {
         setLoading(false);
       }
@@ -33,16 +38,7 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
     fetchEvents();
   }, [currentPage, currentPageSize]);
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 0 && newPage * currentPageSize < events.length) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setCurrentPageSize(newPageSize);
-    setCurrentPage(0);
-  };
+  const totalPages = Math.ceil(totalCount / currentPageSize) || 1;
 
   if (loading) {
     return (
@@ -62,8 +58,6 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
     );
   }
 
-  const totalPages = Math.ceil(events.length / currentPageSize);
-
   return (
     <div className="event-list-page">
       <h2>Список мероприятий</h2>
@@ -72,25 +66,6 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
         <p>Мероприятия не найдены</p>
       ) : (
         <>
-          <div className="events-header">
-            <div className="pagination-info">
-              Показано {events.length} из мероприятий
-            </div>
-            <div className="pagination-controls">
-              <label htmlFor="page-size">Размер страницы: </label>
-              <select
-                id="page-size"
-                value={currentPageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>
-          </div>
-
           <div className="events-grid">
             {events.map(event => (
               <div key={event.id} className="event-card">
@@ -108,33 +83,22 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 0}
-                className="pagination-button"
-              >
-                Назад
-              </button>
-
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => handlePageChange(i)}
-                  className={`pagination-button ${currentPage === i ? 'active' : ''}`}
+          {totalCount > 5 && (
+            <div className="dashboard-pagination">
+              <div className="page-size-select">
+                <label>Показывать по: </label>
+                <select
+                  value={currentPageSize}
+                  onChange={(e) => { setCurrentPageSize(Number(e.target.value)); setCurrentPage(0); }}
                 >
-                  {i + 1}
-                </button>
-              ))}
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages - 1}
-                className="pagination-button"
-              >
-                Вперед
-              </button>
+                  {PAGE_SIZES.map(size => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0}>← Назад</button>
+              <span>Страница {currentPage + 1} из {totalPages} ({totalCount} шт.)</span>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))} disabled={currentPage >= totalPages - 1}>Вперёд →</button>
             </div>
           )}
         </>
