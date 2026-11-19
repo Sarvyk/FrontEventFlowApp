@@ -245,6 +245,22 @@
   box-shadow: 0 6px 15px rgba(255, 193, 7, 0.3);
 }
 
+.profile-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  margin: 10px 0;
+}
+
+.profile-org-title {
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 10px;
+  margin-bottom: 15px;
+  padding-left: 4px;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
   .profile-container {

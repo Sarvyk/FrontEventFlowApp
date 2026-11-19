@@ -21,27 +21,21 @@ export interface OrganizerResponse {
   updatedAt: string;
 }
 
-export interface OrganizerDto {
+export type OrganizerRequestStatus = 'Pending' | 'Approved' | 'Rejected';
+
+export interface OrganizerRequestDto {
   id: string;
   userId: string;
-  companyName: string | null;
-  description: string | null;
-  webSite: string | null;
-  isVerified: boolean;
-  isDelete: boolean;
-  reason: string | null;
-  eventsCount: number;
-  user?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber: string;
-  };
+  userName: string;
+  status: number;
+  data: any;
+  rejectionReason: string | null;
+  approvedAt: string | null;
+  createdAt: string;
 }
 
 export interface OrganizerListResponse {
-  items: OrganizerDto[];
+  items: OrganizerRequestDto[];
   totalCount: number;
 }
 
@@ -54,19 +48,32 @@ export const organizerService = {
 
   // Создать новую заявку на организатора
   createApplication: async (command: OrganizerApplication): Promise<OrganizerResponse> => {
-    const response = await api.post<OrganizerResponse>('/Organizer', command);
+    const response = await api.post<OrganizerResponse>('/Organizer/request', command);
     return response.data;
   },
 
   // Получить все заявки на организатора (только для Admin) с пагинацией
-  getAllApplications: async (offset: number = 0, count: number = 10): Promise<{ items: OrganizerDto[]; totalCount: number }> => {
-    const response = await api.get('/admin/Organizer', { params: { offset, count } });
-    return response.data;
+  getAllApplications: async (offset: number = 0, count: number = 10): Promise<OrganizerListResponse> => {
+    const response = await api.get<{ items: OrganizerRequestDto[]; totalCount: number }>('/admin/Organizer', { params: { offset, count } });
+    return {
+      items: response.data.items ?? [],
+      totalCount: response.data.totalCount ?? 0
+    };
   },
 
   // Обновить статус заявки на организатора (только для Admin)
-  updateApplicationStatus: async (id: string, isVerified: boolean, reason?: string): Promise<OrganizerDto> => {
-    const response = await api.put<OrganizerDto>(`/admin/Organizer/${id}`, { isVerified, reason });
+  updateApplicationStatus: async (id: string, status: 'Pending' | 'Approved' | 'Rejected', reason?: string): Promise<OrganizerRequestDto> => {
+    const response = await api.put<OrganizerRequestDto>(`/admin/Organizer/${id}`, { status, reason });
     return response.data;
+  },
+
+  // Одобрить заявку (только для Admin)
+  approveOrganizer: async (id: string): Promise<void> => {
+    await api.patch(`/admin/Organizer/${id}/approve`);
+  },
+
+  // Отклонить заявку с причиной (только для Admin)
+  rejectOrganizer: async (id: string, reason?: string): Promise<void> => {
+    await api.delete(`/admin/Organizer/${id}/reject`, { data: reason });
   },
 };

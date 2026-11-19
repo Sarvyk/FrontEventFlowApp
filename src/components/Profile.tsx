@@ -202,71 +202,69 @@ const Profile: React.FC = () => {
         </div>
       ) : (
         <div className="profile-info">
-          {isVerifiedOrganizer && user.organizerProfile ? (
-            // Отображаем данные организатора, если пользователь верифицирован
-            <>
-              <div className="profile-item">
-                <span className="profile-label">Полное имя:</span>
-                <span className="profile-value">{user.fullName}</span>
+          {/* Основной профиль пользователя */}
+          <>
+            <div className="profile-item">
+              <span className="profile-label">Имя:</span>
+              <span className="profile-value">{user.firstName}</span>
+            </div>
+            <div className="profile-item">
+              <span className="profile-label">Фамилия:</span>
+              <span className="profile-value">{user.lastName}</span>
+            </div>
+            <div className="profile-item">
+              <span className="profile-label">Email:</span>
+              <span className="profile-value">{user.email}</span>
+            </div>
+            <div className="profile-item">
+              <span className="profile-label">Телефон:</span>
+              <span className="profile-value">{user.phoneNumber || 'Не указан'}</span>
+            </div>
+            <div className="profile-item">
+              <span className="profile-label">Роль:</span>
+              <span className="profile-value">{user.role}</span>
+            </div>
+
+            {/* Информация об организации — только для верифицированных организаторов */}
+            {isVerifiedOrganizer && user.organizerProfile ? (
+              <>
+                <hr className="profile-divider" />
+                <h3 className="profile-org-title">Информация об организации</h3>
+                <div className="profile-item">
+                  <span className="profile-label">Компания:</span>
+                  <span className="profile-value">{user.organizerProfile.companyName || 'Не указано'}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-label">Описание:</span>
+                  <span className="profile-value">{user.organizerProfile.description || 'Не указано'}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-label">Веб-сайт:</span>
+                  <span className="profile-value">{user.organizerProfile.webSite || 'Не указано'}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-label">Количество мероприятий:</span>
+                  <span className="profile-value">{user.organizerProfile.eventsCount}</span>
+                </div>
+              </>
+            ) : !isVerifiedOrganizer && (
+              <div className="profile-actions">
+                <button onClick={handleEdit} className="profile-edit-btn">Изменить профиль</button>
+                <button
+                  onClick={handleApplyOrganizer}
+                  className="profile-apply-organizer-btn"
+                >
+                  Подать заявку на организатора
+                </button>
               </div>
-              <div className="profile-item">
-                <span className="profile-label">Компания:</span>
-                <span className="profile-value">{user.organizerProfile.companyName || 'Не указано'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Описание:</span>
-                <span className="profile-value">{user.organizerProfile.description || 'Не указано'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Веб-сайт:</span>
-                <span className="profile-value">{user.organizerProfile.webSite || 'Не указано'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Количество мероприятий:</span>
-                <span className="profile-value">{user.organizerProfile.eventsCount}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Статус верификации:</span>
-                <span className="profile-value">Верифицирован</span>
-              </div>
-            </>
-          ) : (
-            // Отображаем обычный профиль пользователя
-            <>
-              <div className="profile-item">
-                <span className="profile-label">Имя:</span>
-                <span className="profile-value">{user.firstName}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Фамилия:</span>
-                <span className="profile-value">{user.lastName}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Email:</span>
-                <span className="profile-value">{user.email}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Телефон:</span>
-                <span className="profile-value">{user.phoneNumber || 'Не указан'}</span>
-              </div>
-              <div className="profile-item">
-                <span className="profile-label">Роль:</span>
-                <span className="profile-value">{user.role}</span>
-              </div>
-            </>
-          )}
-          
-          <div className="profile-actions">
-            <button onClick={handleEdit} className="profile-edit-btn">Изменить профиль</button>
-            {!isVerifiedOrganizer && (
-              <button 
-                onClick={handleApplyOrganizer} 
-                className="profile-apply-organizer-btn"
-              >
-                Подать заявку на организатора
-              </button>
             )}
-          </div>
+
+            {isVerifiedOrganizer && (
+              <div className="profile-actions">
+                <button onClick={handleEdit} className="profile-edit-btn">Изменить профиль</button>
+              </div>
+            )}
+          </>
         </div>
       )}
     </div>

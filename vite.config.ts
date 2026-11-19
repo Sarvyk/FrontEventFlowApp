@@ -5,8 +5,6 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Fallback на index.html для SPA-роутинга (BrowserRouter)
-    historyApiFallback: true,
     //proxy: {
       //'/api': {
         //target: 'https://localhost:7218',

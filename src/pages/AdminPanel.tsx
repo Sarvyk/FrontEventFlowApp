@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { organizerService, type OrganizerDto } from '../services/organizerService';
+import { organizerService, type OrganizerRequestDto } from '../services/organizerService';
 import { useAuth } from '../contexts/AuthContext';
 import './AdminPanel.css';
 
 const PAGE_SIZES = [5, 10, 20, 50];
 
 const AdminPanel: React.FC = () => {
-  const [data, setData] = useState<{ items: OrganizerDto[]; totalCount: number } | null>(null);
+  const [data, setData] = useState<{ items: OrganizerRequestDto[]; totalCount: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -25,28 +25,8 @@ const AdminPanel: React.FC = () => {
     const fetchApplications = async () => {
       try {
         setLoading(true);
-        const raw = await organizerService.getAllApplications(page * pageSize, pageSize);
-
-        // Result<IEnumerable<Organizer>> может вернуться как массив или объект с полями
-        let items: OrganizerDto[] = [];
-        let totalCount = 0;
-
-        if (Array.isArray(raw)) {
-          items = raw;
-          totalCount = raw.length;
-        } else if (raw && typeof raw === 'object') {
-          // Пробуем разные возможные формы Result-обёртки
-          const source = (raw as any).Data ?? (raw as any).items ?? (raw as any).results ?? raw;
-          if (Array.isArray(source)) {
-            items = source;
-            totalCount = source.length;
-          } else if ((raw as any).totalCount !== undefined) {
-            items = (raw as any).items ?? [];
-            totalCount = (raw as any).totalCount;
-          }
-        }
-
-        setData({ items, totalCount });
+        const result = await organizerService.getAllApplications(page * pageSize, pageSize);
+        setData(result);
       } catch (err: any) {
         setError(err.message || 'Ошибка при загрузке заявок');
         console.error('[AdminPanel] Fetch error:', err);
@@ -58,13 +38,13 @@ const AdminPanel: React.FC = () => {
     fetchApplications();
   }, [hasRole, navigate, page, pageSize]);
 
-  const handleApprove = async (item: OrganizerDto) => {
+  const handleApprove = async (item: OrganizerRequestDto) => {
     setActionLoading(item.id);
     try {
-      await organizerService.updateApplicationStatus(item.id, true);
+      await organizerService.approveOrganizer(item.id);
       setData(prev => prev ? {
         ...prev,
-        items: prev.items.map(i => i.id === item.id ? { ...i, isVerified: true } : i)
+        items: prev.items.map(i => i.id === item.id ? { ...i, status: 1 as number, approvedAt: new Date().toISOString() } : i)
       } : prev);
     } catch (err: any) {
       setError(err.message || 'Ошибка при обновлении заявки');
@@ -73,16 +53,16 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleReject = async (item: OrganizerDto) => {
+  const handleReject = async (item: OrganizerRequestDto) => {
     const reason = prompt('Причина отклонения (необязательно):');
     if (reason === null) return; // Отмена
 
     setActionLoading(item.id);
     try {
-      await organizerService.updateApplicationStatus(item.id, false, reason || undefined);
+      await organizerService.rejectOrganizer(item.id, reason);
       setData(prev => prev ? {
         ...prev,
-        items: prev.items.map(i => i.id === item.id ? { ...i, isVerified: false, reason: reason || null } : i)
+        items: prev.items.map(i => i.id === item.id ? { ...i, status: 2 as number, rejectionReason: reason } : i)
       } : prev);
     } catch (err: any) {
       setError(err.message || 'Ошибка при обновлении заявки');
@@ -91,14 +71,12 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (isVerified: boolean, isDelete: boolean) => {
-    if (isDelete) {
-      return <span className="status-badge status-rejected">Удалена</span>;
+  const getStatusBadge = (status: number) => {
+    switch (status) {
+      case 1: return <span className="status-badge status-approved">Принята</span>;
+      case 2: return <span className="status-badge status-rejected">Отклонена</span>;
+      default: return <span className="status-badge status-pending">Ожидает</span>;
     }
-    if (isVerified) {
-      return <span className="status-badge status-approved">Принята</span>;
-    }
-    return <span className="status-badge status-pending">Ожидает</span>;
   };
 
   const totalPages = data ? Math.ceil(data.totalCount / pageSize) : 0;
@@ -129,25 +107,33 @@ const AdminPanel: React.FC = () => {
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th>ID заявки</th>
                   <th>Пользователь</th>
-                  <th>Email</th>
-                  <th>Компания</th>
                   <th>Статус</th>
+                  <th>Дата создания</th>
+                  <th>Дата одобрения</th>
+                  <th>Причина отказа</th>
                   <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.map((item) => {
-                  const userName = item.user ? `${item.user.firstName} ${item.user.lastName}` : '—';
-                  const userEmail = item.user?.email || '—';
+                  const formattedCreatedAt = item.createdAt
+                    ? new Date(item.createdAt).toLocaleString('ru-RU')
+                    : '—';
+                  const formattedApprovedAt = item.approvedAt
+                    ? new Date(item.approvedAt).toLocaleString('ru-RU')
+                    : '—';
                   return (
                     <tr key={item.id}>
-                      <td>{userName}</td>
-                      <td>{userEmail}</td>
-                      <td>{item.companyName || '—'}</td>
-                      <td>{getStatusBadge(item.isVerified, item.isDelete)}</td>
+                      <td>{item.id}</td>
+                      <td>{item.userName || '—'}</td>
+                      <td>{getStatusBadge(item.status)}</td>
+                      <td>{formattedCreatedAt}</td>
+                      <td>{formattedApprovedAt}</td>
+                      <td>{item.rejectionReason || '—'}</td>
                       <td className="admin-actions">
-                        {!item.isVerified && !item.isDelete && (
+                        {item.status === 0 && (
                           <>
                             <button
                               onClick={() => handleApprove(item)}
@@ -165,7 +151,7 @@ const AdminPanel: React.FC = () => {
                             </button>
                           </>
                         )}
-                        {(item.isVerified || item.isDelete) && (
+                        {(item.status === 1 || item.status === 2) && (
                           <span className="admin-status-text">—</span>
                         )}
                       </td>

@@ -41,7 +41,20 @@ const OrganizerApplication: React.FC = () => {
       };
 
       const response = await organizerService.createApplication(command);
-      setApplicationData(response);
+
+      // Если сервер вернул пустой body — подставляем данные из формы
+      if (response && Object.keys(response).length > 0) {
+        setApplicationData(response);
+      } else {
+        setApplicationData({
+          id: '—',
+          status: 'Pending',
+          companyName: command.companyName || 'Не указано',
+          description: command.description || 'Не указано',
+          webSite: command.webSite || 'Не указано',
+          createdAt: new Date().toISOString()
+        });
+      }
       setSuccess(true);
       // Перенаправляем на профиль после успешной отправки
       setTimeout(() => {
@@ -107,7 +120,7 @@ const OrganizerApplication: React.FC = () => {
           <div className="form-group">
             <label htmlFor="webSite">Веб-сайт (необязательно):</label>
             <input
-              type="url"
+              type="text"
               id="webSite"
               value={webSite}
               onChange={(e) => setWebSite(e.target.value)}
