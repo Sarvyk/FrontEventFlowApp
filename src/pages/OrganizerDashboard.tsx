@@ -201,12 +201,22 @@ const OrganizerDashboard: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    // HTML input names are camelCase for UX; map to PascalCase property keys expected by EventData
+    const keyMap: Record<string, keyof EventData> = {
+      title: 'Title',
+      description: 'Description',
+      startDate: 'Start',
+      endDate: 'End',
+      city: 'City',
+      address: 'Address',
+    };
+    const propName = keyMap[name] ?? (name as keyof EventData);
     setFormData(prev => {
-      if (name === 'maxParticipants') return { ...prev, [name]: Math.max(1, parseInt(value) || 1) };
-      if (name === 'price') return { ...prev, [name]: parseFloat(value) || 0 };
-      if (name === 'type') return { ...prev, [name]: parseInt(value) as EventType };
-      if (name === 'isPublished') return { ...prev, [name]: (e.target as HTMLInputElement).checked };
-      return { ...prev, [name]: value };
+      if (propName === 'maxParticipants') return { ...prev, [propName]: Math.max(1, parseInt(value) || 1) };
+      if (propName === 'Price') return { ...prev, [propName]: parseFloat(value) || 0 };
+      if (propName === 'type') return { ...prev, [propName]: parseInt(value) as EventType };
+      if (propName === 'isPublished') return { ...prev, [propName]: (e.target as HTMLInputElement).checked };
+      return { ...prev, [propName]: value };
     });
     if (formErrors[name as keyof FormErrors]) {
       setFormErrors(prev => ({ ...prev, [name]: undefined }));
