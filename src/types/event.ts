@@ -9,6 +9,11 @@ export interface EventDto {
   address: string;
   price: number;
   maxParticipants: number;
+  currentParticipants: number;
+  availableSpots: number;
+  status: string;
+  imageUrl: string | null;
+  organizerName: string;
   isPublished: boolean;
   createdAt: string;
 }

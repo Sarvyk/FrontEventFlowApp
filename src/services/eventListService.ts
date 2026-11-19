@@ -1,15 +1,10 @@
 import api from './api';
 import { type EventDto } from '../types/event';
 
-export interface EventsResponse {
-  events: EventDto[];
-  totalCount: number;
-}
-
 export const eventListService = {
   // Получение списка мероприятий с пагинацией
-  getEvents: async (page: number = 0, pageSize: number = 10): Promise<EventsResponse> => {
-    const response = await api.get<EventsResponse>('/Event', {
+  getEvents: async (page: number = 0, pageSize: number = 10): Promise<EventDto[]> => {
+    const response = await api.get<EventDto[]>('/Event', {
       params: {
         page,
         pageSize
