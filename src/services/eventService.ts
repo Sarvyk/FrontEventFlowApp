@@ -9,7 +9,9 @@ export interface EventData {
   Start: string;
   End: string;
   City: string;
-  Address: string;
+  Street: string;
+  House: string;
+  Apartment: string;
   Price: number;
   maxParticipants: number;
   isPublished: boolean;
@@ -24,7 +26,9 @@ export interface EventResponse {
   Start: string;
   End: string;
   City: string;
-  Address: string;
+  Street: string;
+  House: string;
+  Apartment: string;
   Price: number;
   maxParticipants: number;
   isPublished: boolean;
@@ -53,7 +57,10 @@ export interface MyEventItem {
   start: string;
   end: string;
   city: string;
-  address: string;
+  address?: string;
+  street: string;
+  house: string;
+  apartment: string;
   price: number;
   maxParticipants: number;
   currentParticipants: number;
@@ -103,7 +110,7 @@ const toApiPayload = (data: EventData, dictionaries?: MyEventsApiResponse['dicti
     start: data.Start,
     end: data.End,
     city: data.City,
-    address: data.Address,
+    address: [data.Street, data.House, data.Apartment].filter(Boolean).join(', '),
     price: data.Price,
     maxParticipants: data.maxParticipants,
     status: statusValue,
@@ -133,23 +140,34 @@ export const eventService = {
   getMyEvents: async (page: number = 0, pageSize: number = 10): Promise<{ events: EventResponse[]; totalCount: number; dictionaries: MyEventsApiResponse['dictionaries'] }> => {
     const response = await api.get<MyEventsApiResponse>('/Event/my', { params: { page, pageSize } });
     const { items, totalCount } = response.data.data;
-    const events: EventResponse[] = items.map(item => ({
-      id: item.id,
-      Title: item.title,
-      Description: item.description,
-      type: item.type,
-      Start: item.start,
-      End: item.end,
-      City: item.city,
-      Address: item.address,
-      Price: item.price,
-      maxParticipants: item.maxParticipants,
-      isPublished: item.isPublished,
-      status: item.status,
-      organizerId: '',
-      createdAt: item.createdAt,
-      updatedAt: item.createdAt,
-    }));
+    const events: EventResponse[] = items.map(item => {
+      // Разбираем address на части: улица, дом, квартира
+      // Формат в БД: "Ленина, 5, 85" или "ул. Ленина, д. 5, кв. 10" — без жёсткой привязки к префиксам
+      const parts = (item.address || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+      const street = parts[0] || '';
+      const nonStreetParts = parts.slice(1);
+      const rawHouse = nonStreetParts[0] || '';
+      const rawApartment = nonStreetParts[1] || '';
+      return {
+        id: item.id,
+        Title: item.title,
+        Description: item.description,
+        type: item.type,
+        Start: item.start,
+        End: item.end,
+        City: item.city,
+        Street: street,
+        House: rawHouse.replace(/^(дом|д\.?)\s*/i, ''),
+        Apartment: rawApartment.replace(/^(квартира|кв\.?|к)\s*/i, ''),
+        Price: item.price,
+        maxParticipants: item.maxParticipants,
+        isPublished: item.isPublished,
+        status: item.status,
+        organizerId: '',
+        createdAt: item.createdAt,
+        updatedAt: item.createdAt,
+      };
+    });
     return { events, totalCount, dictionaries: response.data.dictionaries };
   },
 

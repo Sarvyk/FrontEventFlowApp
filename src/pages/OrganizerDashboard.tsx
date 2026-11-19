@@ -33,7 +33,9 @@ const defaultFormData: EventData = {
   Start: '',
   End: '',
   City: '',
-  Address: '',
+  Street: '',
+  House: '',
+  Apartment: '',
   Price: 0,
   maxParticipants: 1,
   isPublished: false,
@@ -119,7 +121,9 @@ const OrganizerDashboard: React.FC = () => {
       Start: event.Start,
       End: event.End,
       City: event.City,
-      Address: event.Address,
+      Street: event.Street,
+      House: event.House,
+      Apartment: event.Apartment,
       Price: event.Price,
       maxParticipants: event.maxParticipants,
       isPublished: event.isPublished,
@@ -221,7 +225,9 @@ const OrganizerDashboard: React.FC = () => {
       startDate: 'Start',
       endDate: 'End',
       city: 'City',
-      address: 'Address',
+      street: 'Street',
+      house: 'House',
+      apartment: 'Apartment',
       price: 'Price',
     };
     const propName = keyMap[name] ?? (name as keyof EventData);
@@ -287,7 +293,7 @@ const OrganizerDashboard: React.FC = () => {
                 <div className="event-card-body">
                   <p><strong>Тип:</strong> {getTypeLabel(event.type)}</p>
                   <p><strong>Дата:</strong> {new Date(event.Start).toLocaleDateString('ru-RU')} — {new Date(event.End).toLocaleDateString('ru-RU')}</p>
-                  <p><strong>Место:</strong> {event.City || event.Address ? `${event.City}${event.City && event.Address ? ', ' : ''}${event.Address}` : 'Не указано'}</p>
+                  <p><strong>Место:</strong> {event.City || event.Street ? `${event.City}${event.City && (event.Street || event.House || event.Apartment) ? ', ' : ''}${[event.Street, event.House, event.Apartment].filter(Boolean).join(', ')}` : 'Не указано'}</p>
                   <p><strong>Описание:</strong> {event.Description || 'Не указано'}</p>
                   <p><strong>Цена:</strong> {event.Price > 0 ? `${event.Price} руб.` : 'Бесплатно'}</p>
                   <p><strong>Участников (макс.):</strong> {event.maxParticipants}</p>
@@ -415,12 +421,32 @@ const OrganizerDashboard: React.FC = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="address">Адрес</label>
+                  <label htmlFor="street">Улица</label>
                   <input
                     type="text"
-                    id="address"
-                    name="address"
-                    value={formData.Address}
+                    id="street"
+                    name="street"
+                    value={formData.Street}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="house">Дом</label>
+                  <input
+                    type="text"
+                    id="house"
+                    name="house"
+                    value={formData.House}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="apartment">Квартира</label>
+                  <input
+                    type="text"
+                    id="apartment"
+                    name="apartment"
+                    value={formData.Apartment}
                     onChange={handleChange}
                   />
                 </div>
