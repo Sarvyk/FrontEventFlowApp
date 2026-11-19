@@ -37,6 +37,7 @@ const defaultFormData: EventData = {
   Price: 0,
   maxParticipants: 1,
   isPublished: false,
+  status: 'Draft',
 };
 
 const OrganizerDashboard: React.FC = () => {
@@ -112,6 +113,7 @@ const OrganizerDashboard: React.FC = () => {
       Price: event.Price,
       maxParticipants: event.maxParticipants,
       isPublished: event.isPublished,
+      status: event.status,
     });
     setFormErrors({});
     setSubmitError(null);
@@ -170,9 +172,9 @@ const OrganizerDashboard: React.FC = () => {
       };
       console.log('[OrganizerDashboard] Submitting payload:', JSON.stringify(payload));
       if (editingEvent) {
-        await eventService.updateEvent(editingEvent.id, payload);
+        await eventService.updateEvent(editingEvent.id, payload, dictionaries ?? undefined);
       } else {
-        await eventService.createEvent(payload);
+        await eventService.createEvent(payload, dictionaries ?? undefined);
       }
       closeForm();
       fetchEvents();
@@ -225,7 +227,15 @@ const OrganizerDashboard: React.FC = () => {
     }
   };
 
-  const getTypeLabel = (type: EventType): string => EVENT_TYPE_LABELS[type] ?? 'Другое';
+  const getTypeLabel = (type: number): string => {
+    const typeDict = dictionaries?.[0];
+    if (typeDict) {
+      for (const [key, label] of Object.entries(typeDict)) {
+        if (String(key) === String(type)) return label;
+      }
+    }
+    return EVENT_TYPE_LABELS[type as EventType] ?? 'Другое';
+  };
 
   const getStatusLabel = (status: string): string => {
     const statusDict = dictionaries?.[1];

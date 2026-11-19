@@ -27,6 +27,7 @@ export interface EventData {
   Price: number;
   maxParticipants: number;
   isPublished: boolean;
+  status?: EventStatusType;
 }
 
 export interface EventResponse {
@@ -48,6 +49,15 @@ export interface EventResponse {
 }
 
 export type EventStatusType = 'Draft' | 'Published' | 'InProgress' | 'Completed' | 'Cancelled';
+
+// Ищет индекс значения в словаре (проходит циклом)
+const findIndexByValue = <T extends Record<string, string>>(dict: T, value: string): number | null => {
+  const entries = Object.entries(dict);
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i][1] === value) return i;
+  }
+  return null;
+};
 
 export interface MyEventItem {
   id: string;
@@ -82,10 +92,33 @@ export interface EventsListResponse {
   totalCount: number;
 }
 
+// Преобразует PascalCase EventData в camelCase payload для API-запросов
+const toApiPayload = (data: EventData, dictionaries?: MyEventsApiResponse['dictionaries'] | null) => {
+  const statusDict = dictionaries?.[1];
+  let statusValue: number;
+  if (data.status && statusDict) {
+    statusValue = findIndexByValue(statusDict, data.status) ?? 0;
+  } else {
+    statusValue = 0;
+  }
+  return {
+    title: data.Title,
+    description: data.Description,
+    type: data.type,
+    start: data.Start,
+    end: data.End,
+    city: data.City,
+    address: data.Address,
+    price: data.Price,
+    maxParticipants: data.maxParticipants,
+    status: statusValue,
+  };
+};
+
 export const eventService = {
   // Создание нового мероприятия (требует роль Organizer или Admin)
-  createEvent: async (data: EventData): Promise<EventResponse> => {
-    const response = await api.post('/Event', data);
+  createEvent: async (data: EventData, dictionaries?: MyEventsApiResponse['dictionaries'] | null): Promise<EventResponse> => {
+    const response = await api.post('/Event', toApiPayload(data, dictionaries));
     return response.data;
   },
 
@@ -96,8 +129,8 @@ export const eventService = {
   },
 
   // Обновление данных мероприятия (требует роль Organizer или Admin)
-  updateEvent: async (eventId: string, data: EventData): Promise<EventResponse> => {
-    const response = await api.put(`/Event/${eventId}`, data);
+  updateEvent: async (eventId: string, data: EventData, dictionaries?: MyEventsApiResponse['dictionaries'] | null): Promise<EventResponse> => {
+    const response = await api.put(`/Event/${eventId}`, toApiPayload(data, dictionaries));
     return response.data;
   },
 
