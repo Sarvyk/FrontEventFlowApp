@@ -66,7 +66,6 @@ const OrganizerDashboard: React.FC = () => {
       setEvents(result.events ?? []);
       setTotalCount(result.totalCount ?? 0);
       setDictionaries(result.dictionaries ?? null);
-      console.log('[OrganizerDashboard] dictionaries[0]:', result.dictionaries?.[0]);
     } catch (err: unknown) {
       const message = getApiErrorMessage(err);
       setError(message);
@@ -181,8 +180,6 @@ const OrganizerDashboard: React.FC = () => {
         Start: normalizeDate(formData.Start),
         End: normalizeDate(formData.End),
       };
-      console.log('[OrganizerDashboard] Submitting payload:', JSON.stringify(payload));
-      console.log('[OrganizerDashboard] formData.type:', formData.type, 'dictionaries[0]:', dictionaries?.[0]);
       if (editingEvent) {
         await eventService.updateEvent(editingEvent.id, payload, dictionaries ?? undefined);
       } else {
@@ -232,7 +229,6 @@ const OrganizerDashboard: React.FC = () => {
       if (propName === 'maxParticipants') return { ...prev, [propName]: Math.max(1, parseInt(value) || 1) };
       if (propName === 'Price') return { ...prev, [propName]: parseFloat(value) || 0 };
       if (propName === 'type') {
-        console.log('[OrganizerDashboard] type onChange:', { value });
         return { ...prev, [propName]: value };
       }
       if (propName === 'isPublished') return { ...prev, [propName]: (e.target as HTMLInputElement).checked };
