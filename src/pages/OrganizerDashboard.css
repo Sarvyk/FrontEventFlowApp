@@ -82,6 +82,11 @@
   color: #856404;
 }
 
+.event-status-badge.cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
 .event-card-body p {
   margin: 6px 0;
   font-size: 0.95rem;
@@ -170,6 +175,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.form-row.three-col {
+  grid-template-columns: 2fr 1fr 1fr;
 }
 
 .form-group {
@@ -292,7 +301,8 @@
 
 /* Адаптивность */
 @media (max-width: 600px) {
-  .form-row {
+  .form-row,
+  .form-row.three-col {
     grid-template-columns: 1fr;
   }
 

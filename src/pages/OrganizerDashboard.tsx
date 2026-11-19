@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { eventService, type EventResponse, type EventData, EVENT_TYPE_LABELS, type EventType } from '../services/eventService';
+import { eventService, type EventResponse, type EventData, EVENT_TYPE_LABELS, type EventType, type MyEventsApiResponse } from '../services/eventService';
 import { useAuth } from '../contexts/AuthContext';
 import './OrganizerDashboard.css';
 
@@ -42,6 +42,7 @@ const defaultFormData: EventData = {
 const OrganizerDashboard: React.FC = () => {
   const [events, setEvents] = useState<EventResponse[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [dictionaries, setDictionaries] = useState<MyEventsApiResponse['dictionaries'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -63,6 +64,7 @@ const OrganizerDashboard: React.FC = () => {
       const result = await eventService.getMyEvents(page, pageSize);
       setEvents(result.events ?? []);
       setTotalCount(result.totalCount ?? 0);
+      setDictionaries(result.dictionaries ?? null);
     } catch (err: unknown) {
       const message = getApiErrorMessage(err);
       setError(message);
@@ -225,6 +227,11 @@ const OrganizerDashboard: React.FC = () => {
 
   const getTypeLabel = (type: EventType): string => EVENT_TYPE_LABELS[type] ?? 'Другое';
 
+  const getStatusLabel = (status: string): string => {
+    const statusDict = dictionaries?.[1];
+    return statusDict?.[status as keyof typeof statusDict] ?? status;
+  };
+
   if (!isAuthenticated || !hasRole('Organizer')) {
     return null;
   }
@@ -250,8 +257,8 @@ const OrganizerDashboard: React.FC = () => {
               <div key={event.id} className="event-card">
                 <div className="event-card-header">
                   <h3 className="event-card-title">{event.Title}</h3>
-                  <span className={`event-status-badge ${event.isPublished ? 'published' : 'draft'}`}>
-                    {event.isPublished ? 'Опубликовано' : 'Черновик'}
+                  <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
+                    {getStatusLabel(event.status)}
                   </span>
                 </div>
                 <div className="event-card-body">

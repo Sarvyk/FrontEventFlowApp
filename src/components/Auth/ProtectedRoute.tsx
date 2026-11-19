@@ -5,9 +5,10 @@ import { useAuth } from '../../contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
+  organizerOnly?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false, organizerOnly = false }) => {
   const { isAuthenticated, isLoadingAuth, hasRole } = useAuth();
 
   if (isLoadingAuth) {
@@ -19,6 +20,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
   }
 
   if (adminOnly && !hasRole('Admin')) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (organizerOnly && !hasRole('Organizer')) {
     return <Navigate to="/" replace />;
   }
 

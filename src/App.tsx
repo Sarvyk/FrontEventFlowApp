@@ -7,6 +7,7 @@ import Profile from './components/Profile';
 import OrganizerApplication from './pages/OrganizerApplication';
 import EventListPage from './pages/EventListPage';
 import AdminPanel from './pages/AdminPanel';
+import OrganizerDashboard from './pages/OrganizerDashboard';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import './App.css';
@@ -37,6 +38,11 @@ function App() {
               <Route path="/admin" element={
                 <ProtectedRoute adminOnly>
                   <AdminPanel />
+                </ProtectedRoute>
+              } />
+              <Route path="/organizer/dashboard" element={
+                <ProtectedRoute organizerOnly>
+                  <OrganizerDashboard />
                 </ProtectedRoute>
               } />
             </Routes>

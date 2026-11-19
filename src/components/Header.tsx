@@ -39,6 +39,11 @@ const Header: React.FC = () => {
                 <li className="header-nav-item">
                   <Link to="/profile" className="header-nav-link">Профиль</Link>
                 </li>
+                {hasRole('Organizer') && (
+                  <li className="header-nav-item">
+                    <Link to="/organizer/dashboard" className="header-nav-link">Мои мероприятия</Link>
+                  </li>
+                )}
                 {hasRole('Admin') && (
                   <li className="header-nav-item">
                     <Link to="/admin" className="header-nav-link">Админ-панель</Link>

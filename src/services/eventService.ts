@@ -41,9 +41,40 @@ export interface EventResponse {
   Price: number;
   maxParticipants: number;
   isPublished: boolean;
+  status: EventStatusType;
   organizerId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export type EventStatusType = 'Draft' | 'Published' | 'InProgress' | 'Completed' | 'Cancelled';
+
+export interface MyEventItem {
+  id: string;
+  title: string;
+  description: string;
+  type: EventType;
+  start: string;
+  end: string;
+  city: string;
+  address: string;
+  price: number;
+  maxParticipants: number;
+  currentParticipants: number;
+  availableSpots: number;
+  status: EventStatusType;
+  imageUrl: string | null;
+  organizerName: string;
+  isPublished: boolean;
+  createdAt: string;
+}
+
+export interface MyEventsApiResponse {
+  data: {
+    items: MyEventItem[];
+    totalCount: number;
+  };
+  dictionaries: [Record<string, string>, Record<EventStatusType, string>];
 }
 
 export interface EventsListResponse {
@@ -71,9 +102,27 @@ export const eventService = {
   },
 
   // Получить свои мероприятия (Organizer) с пагинацией
-  getMyEvents: async (page: number = 0, pageSize: number = 10): Promise<EventsListResponse> => {
-    const response = await api.get<EventsListResponse>('/Event/my', { params: { page, pageSize } });
-    return response.data;
+  getMyEvents: async (page: number = 0, pageSize: number = 10): Promise<{ events: EventResponse[]; totalCount: number; dictionaries: MyEventsApiResponse['dictionaries'] }> => {
+    const response = await api.get<MyEventsApiResponse>('/Event/my', { params: { page, pageSize } });
+    const { items, totalCount } = response.data.data;
+    const events: EventResponse[] = items.map(item => ({
+      id: item.id,
+      Title: item.title,
+      Description: item.description,
+      type: item.type,
+      Start: item.start,
+      End: item.end,
+      City: item.city,
+      Address: item.address,
+      Price: item.price,
+      maxParticipants: item.maxParticipants,
+      isPublished: item.isPublished,
+      status: item.status,
+      organizerId: '',
+      createdAt: item.createdAt,
+      updatedAt: item.createdAt,
+    }));
+    return { events, totalCount, dictionaries: response.data.dictionaries };
   },
 
   // Удалить своё мероприятие (Organizer или Admin)
