@@ -1,25 +1,11 @@
 import api from './api';
 
-export type EventType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 99;
-
-export const EVENT_TYPE_LABELS: Record<EventType, string> = {
-  0: 'Конференция',
-  1: 'Семинар',
-  2: 'Мастер-класс',
-  3: 'Спортивное мероприятие',
-  4: 'Концерт',
-  5: 'Выставка',
-  6: 'Встреча',
-  7: 'День рождения',
-  8: 'Похороны',
-  9: 'Свадьба',
-  99: 'Другое',
-};
+export type EventType = number;
 
 export interface EventData {
   Title: string;
   Description: string;
-  type: EventType;
+  type: number | string;
   Start: string;
   End: string;
   City: string;
@@ -48,7 +34,7 @@ export interface EventResponse {
   updatedAt: string;
 }
 
-export type EventStatusType = 'Draft' | 'Published' | 'InProgress' | 'Completed' | 'Cancelled';
+export type EventStatusType = string;
 
 // Ищет индекс значения в словаре (проходит циклом)
 const findIndexByValue = <T extends Record<string, string>>(dict: T, value: string): number | null => {
@@ -101,10 +87,19 @@ const toApiPayload = (data: EventData, dictionaries?: MyEventsApiResponse['dicti
   } else {
     statusValue = 0;
   }
+  const typeDict = dictionaries?.[0];
+  let typeValue: number | string = data.type as unknown as number;
+  if (typeDict && typeof data.type === 'string') {
+    // Ищем индекс строкового ключа в словаре типов
+    for (const [key] of Object.entries(typeDict)) {
+      if (key === data.type) break;
+    }
+    typeValue = Object.keys(typeDict).indexOf(data.type as string);
+  }
   return {
     title: data.Title,
     description: data.Description,
-    type: data.type,
+    type: typeValue,
     start: data.Start,
     end: data.End,
     city: data.City,

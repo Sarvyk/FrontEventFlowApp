@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { eventService, type EventResponse, type EventData, EVENT_TYPE_LABELS, type EventType, type MyEventsApiResponse } from '../services/eventService';
+import { eventService, type EventResponse, type EventData, type MyEventsApiResponse } from '../services/eventService';
 import { useAuth } from '../contexts/AuthContext';
 import './OrganizerDashboard.css';
 
@@ -29,7 +29,7 @@ interface FormErrors {
 const defaultFormData: EventData = {
   Title: '',
   Description: '',
-  type: 99,
+  type: 0,
   Start: '',
   End: '',
   City: '',
@@ -66,6 +66,7 @@ const OrganizerDashboard: React.FC = () => {
       setEvents(result.events ?? []);
       setTotalCount(result.totalCount ?? 0);
       setDictionaries(result.dictionaries ?? null);
+      console.log('[OrganizerDashboard] dictionaries[0]:', result.dictionaries?.[0]);
     } catch (err: unknown) {
       const message = getApiErrorMessage(err);
       setError(message);
@@ -102,10 +103,20 @@ const OrganizerDashboard: React.FC = () => {
   const openEditForm = (event: EventResponse) => {
     console.log('[OrganizerDashboard] Editing event dates:', event.Start, event.End);
     setEditingEvent(event);
+    // Конвертируем числовой type в строковый ключ словаря
+    let eventType: unknown = event.type;
+    if (dictionaries?.[0]) {
+      const typeDict = dictionaries[0];
+      const keys = Object.keys(typeDict);
+      const idx = Number(event.type);
+      if (idx >= 0 && idx < keys.length) {
+        eventType = keys[idx];
+      }
+    }
     setFormData({
       Title: event.Title,
       Description: event.Description,
-      type: event.type,
+      type: eventType as number | string,
       Start: event.Start,
       End: event.End,
       City: event.City,
@@ -171,6 +182,7 @@ const OrganizerDashboard: React.FC = () => {
         End: normalizeDate(formData.End),
       };
       console.log('[OrganizerDashboard] Submitting payload:', JSON.stringify(payload));
+      console.log('[OrganizerDashboard] formData.type:', formData.type, 'dictionaries[0]:', dictionaries?.[0]);
       if (editingEvent) {
         await eventService.updateEvent(editingEvent.id, payload, dictionaries ?? undefined);
       } else {
@@ -213,12 +225,16 @@ const OrganizerDashboard: React.FC = () => {
       endDate: 'End',
       city: 'City',
       address: 'Address',
+      price: 'Price',
     };
     const propName = keyMap[name] ?? (name as keyof EventData);
     setFormData(prev => {
       if (propName === 'maxParticipants') return { ...prev, [propName]: Math.max(1, parseInt(value) || 1) };
       if (propName === 'Price') return { ...prev, [propName]: parseFloat(value) || 0 };
-      if (propName === 'type') return { ...prev, [propName]: parseInt(value) as EventType };
+      if (propName === 'type') {
+        console.log('[OrganizerDashboard] type onChange:', { value });
+        return { ...prev, [propName]: value };
+      }
       if (propName === 'isPublished') return { ...prev, [propName]: (e.target as HTMLInputElement).checked };
       return { ...prev, [propName]: value };
     });
@@ -227,14 +243,15 @@ const OrganizerDashboard: React.FC = () => {
     }
   };
 
-  const getTypeLabel = (type: number): string => {
+  const getTypeLabel = (type: unknown): string => {
     const typeDict = dictionaries?.[0];
     if (typeDict) {
+      const typeStr = String(type);
       for (const [key, label] of Object.entries(typeDict)) {
-        if (String(key) === String(type)) return label;
+        if (key === typeStr || String(Object.keys(typeDict).indexOf(key)) === typeStr) return label;
       }
     }
-    return EVENT_TYPE_LABELS[type as EventType] ?? 'Другое';
+    return 'Не указан';
   };
 
   const getStatusLabel = (status: string): string => {
@@ -315,7 +332,7 @@ const OrganizerDashboard: React.FC = () => {
       )}
 
       {/* Форма создания/редактирования */}
-      {formOpen && (
+      {formOpen && dictionaries?.[0] && (
         <div className="event-form-overlay" onClick={closeForm}>
           <div className="event-form" onClick={(e) => e.stopPropagation()}>
             <h3>{editingEvent ? 'Редактировать мероприятие' : 'Создать мероприятие'}</h3>
@@ -350,12 +367,16 @@ const OrganizerDashboard: React.FC = () => {
                 <select
                   id="type"
                   name="type"
-                  value={formData.type}
+                  value={formData.type as unknown as string}
                   onChange={handleChange}
                 >
-                  {([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99] as EventType[]).map(t => (
-                    <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
-                  ))}
+                  {dictionaries?.[0] ? (
+                    Object.entries(dictionaries[0]).map(([t, label]) => (
+                      <option key={t} value={t}>{label}</option>
+                    ))
+                  ) : (
+                    <option value="">Загрузка...</option>
+                  )}
                 </select>
               </div>
 
