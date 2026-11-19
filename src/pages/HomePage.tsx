@@ -1,10 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
-  // Используем контекст для проверки авторизации вместо локального состояния
-  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, hasRole } = useAuth();
 
   return (
     <div className="home-page">
@@ -22,10 +23,19 @@ const HomePage: React.FC = () => {
             </div>
           </a>
           
-          <div className="feature-card">
-            <h3>Организация событий</h3>
-            <p>Создавайте и управляйте своими мероприятиями. Управляйте регистрацией участников и информацией о событии.</p>
-          </div>
+          <a href="#" className="feature-card-link" onClick={(e) => {
+            e.preventDefault();
+            if (hasRole('Organizer')) {
+              navigate('/organizer/dashboard');
+            } else {
+              navigate('/login');
+            }
+          }}>
+            <div className="feature-card">
+              <h3>Организация событий</h3>
+              <p>Создавайте и управляйте своими мероприятиями. Управляйте регистрацией участников и информацией о событии.</p>
+            </div>
+          </a>
           
           <div className="feature-card">
             <h3>Участие в мероприятиях</h3>

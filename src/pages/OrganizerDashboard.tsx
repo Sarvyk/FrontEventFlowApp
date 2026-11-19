@@ -403,7 +403,7 @@ const OrganizerDashboard: React.FC = () => {
 
       {/* Форма создания/редактирования */}
       {formOpen && dictionaries?.[0] && (
-        <div className="event-form-overlay" onClick={closeForm}>
+        <div className="event-form-overlay">
           <div className="event-form" onClick={(e) => e.stopPropagation()}>
             <h3>{editingEvent ? 'Редактировать мероприятие' : 'Создать мероприятие'}</h3>
             {submitError && <div className="form-error">{submitError}</div>}
