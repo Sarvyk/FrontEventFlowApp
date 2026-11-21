@@ -5,13 +5,17 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    //proxy: {
-      //'/api': {
-        //target: 'https://localhost:7218',
-        //changeOrigin: true,
-        //secure: false,
-        //rewrite: (path) => path.replace(/^\/api/, '/api')
-      //}
-    //}
+    proxy: {
+      '/api': {
+        target: 'https://localhost:7218',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/images': {
+        target: 'https://localhost:7218',
+        changeOrigin: true,
+        secure: false,
+      },
+    }
   }
 })

@@ -168,6 +168,7 @@ export const eventService = {
         organizerId: '',
         createdAt: item.createdAt,
         updatedAt: item.createdAt,
+        imageUrl: item.imageUrl,
       };
     });
     return { events, totalCount, dictionaries: response.data.dictionaries };

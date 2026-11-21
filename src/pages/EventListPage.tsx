@@ -69,6 +69,9 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
           <div className="events-grid">
             {events.map(event => (
               <div key={event.id} className="event-card">
+                {event.imageUrl && (
+                  <img src={event.imageUrl} alt={event.title} className="event-card-image" />
+                )}
                 <h3>{event.title}</h3>
                 <p><strong>Тип:</strong> {event.type}</p>
                 <p><strong>Дата:</strong> {new Date(event.start).toLocaleDateString()}</p>
