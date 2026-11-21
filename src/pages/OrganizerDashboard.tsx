@@ -256,7 +256,7 @@ const OrganizerDashboard: React.FC = () => {
 
     setSubmitError(null);
     try {
-      const payload: EventData = {
+        const payload: EventData = {
         ...formData,
         Start: normalizeDate(formData.Start),
         End: normalizeDate(formData.End),
@@ -411,7 +411,7 @@ const OrganizerDashboard: React.FC = () => {
       )}
 
       {/* Форма создания/редактирования */}
-      {formOpen && dictionaries?.[0] && (
+      {formOpen && dictionaries?.[0] && dictionaries?.[1] && (
         <div className="event-form-overlay">
           <div className="event-form" onClick={(e) => e.stopPropagation()}>
             <h3>{editingEvent ? 'Редактировать мероприятие' : 'Создать мероприятие'}</h3>

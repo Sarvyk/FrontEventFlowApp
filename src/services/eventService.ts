@@ -40,11 +40,11 @@ export interface EventResponse {
 
 export type EventStatusType = string;
 
-// Ищет индекс значения в словаре (проходит циклом)
-const findIndexByValue = <T extends Record<string, string>>(dict: T, value: string): number | null => {
+// Ищет индекс ключа в словаре (проходит циклом)
+const findIndexByKey = <T extends Record<string, string>>(dict: T, key: string): number | null => {
   const entries = Object.entries(dict);
   for (let i = 0; i < entries.length; i++) {
-    if (entries[i][1] === value) return i;
+    if (entries[i][0] === key) return i;
   }
   return null;
 };
@@ -90,7 +90,7 @@ const toApiPayload = (data: EventData, dictionaries?: MyEventsApiResponse['dicti
   const statusDict = dictionaries?.[1];
   let statusValue: number;
   if (data.status && statusDict) {
-    statusValue = findIndexByValue(statusDict, data.status) ?? 0;
+    statusValue = findIndexByKey(statusDict, data.status) ?? 0;
   } else {
     statusValue = 0;
   }
