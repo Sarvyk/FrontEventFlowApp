@@ -124,8 +124,8 @@ const OrganizerDashboard: React.FC = () => {
       Title: event.Title,
       Description: event.Description,
       type: eventType as number | string,
-      Start: event.Start,
-      End: event.End,
+      Start: isoToLocalDatetime(event.Start),
+      End: isoToLocalDatetime(event.End),
       City: event.City,
       Street: event.Street,
       House: event.House,
@@ -233,11 +233,20 @@ const OrganizerDashboard: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // ---- Отправка формы ----
+  // ---- Работа с датами ----
+  // ISO-строка (с timezone/секундами) → формат datetime-local: "YYYY-MM-DDTHH:MM"
+  const isoToLocalDatetime = (iso: string): string => {
+    if (!iso || iso.length < 16) return iso;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  // Значение из datetime-local → строка для отправки на сервер (UTC с Z)
   const normalizeDate = (value: string): string => {
     if (!value || value.length < 10) return value;
-    // datetime-local: "YYYY-MM-DDTHH:MM" → добавляем секунды, оставляем локальное время
-    if (value.length === 16) return `${value}:00`;
+    if (value.length === 16) return `${value}:00Z`;
     return value;
   };
 
@@ -436,22 +445,41 @@ const OrganizerDashboard: React.FC = () => {
                 {formErrors.description && <span className="field-error">{formErrors.description}</span>}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="type">Тип мероприятия</label>
-                <select
-                  id="type"
-                  name="type"
-                  value={formData.type as unknown as string}
-                  onChange={handleChange}
-                >
-                  {dictionaries?.[0] ? (
-                    Object.entries(dictionaries[0]).map(([t, label]) => (
-                      <option key={t} value={t}>{label}</option>
-                    ))
-                  ) : (
-                    <option value="">Загрузка...</option>
-                  )}
-                </select>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="type">Тип мероприятия</label>
+                  <select
+                    id="type"
+                    name="type"
+                    value={formData.type as unknown as string}
+                    onChange={handleChange}
+                  >
+                    {dictionaries?.[0] ? (
+                      Object.entries(dictionaries[0]).map(([t, label]) => (
+                        <option key={t} value={t}>{label}</option>
+                      ))
+                    ) : (
+                      <option value="">Загрузка...</option>
+                    )}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="status">Статус</label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status || ''}
+                    onChange={handleChange}
+                  >
+                    {dictionaries?.[1] ? (
+                      Object.entries(dictionaries[1]).map(([s, label]) => (
+                        <option key={s} value={s}>{label}</option>
+                      ))
+                    ) : (
+                      <option value="">Загрузка...</option>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <div className="form-row">
@@ -565,18 +593,6 @@ const OrganizerDashboard: React.FC = () => {
                   />
                   {formErrors.maxParticipants && <span className="field-error">{formErrors.maxParticipants}</span>}
                 </div>
-              </div>
-
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isPublished"
-                    checked={formData.isPublished}
-                    onChange={handleChange}
-                  />
-                  Опубликовать
-                </label>
               </div>
 
               <div className="form-actions">

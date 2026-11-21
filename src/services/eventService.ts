@@ -132,7 +132,8 @@ export const eventService = {
 
   // Обновление данных мероприятия (требует роль Organizer или Admin)
   updateEvent: async (eventId: string, data: EventData, dictionaries?: MyEventsApiResponse['dictionaries'] | null): Promise<EventResponse> => {
-    const response = await api.put(`/Event/${eventId}`, toApiPayload(data, dictionaries));
+    const payload = toApiPayload(data, dictionaries);
+    const response = await api.put('/Event', { eventId, ...payload });
     return response.data;
   },
 
