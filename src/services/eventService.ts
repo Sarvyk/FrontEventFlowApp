@@ -121,8 +121,8 @@ const toApiPayload = (data: EventData, dictionaries?: MyEventsApiResponse['dicti
 export const eventService = {
   // Создание нового мероприятия (требует роль Organizer или Admin)
   createEvent: async (data: EventData, dictionaries?: MyEventsApiResponse['dictionaries'] | null): Promise<EventResponse> => {
-    const response = await api.post('/Event', toApiPayload(data, dictionaries));
-    return response.data;
+    const response = await api.post<string>('/Event', toApiPayload(data, dictionaries));
+    return { id: response.data } as EventResponse;
   },
 
   // Получение данных о мероприятии (без авторизации)
