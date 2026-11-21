@@ -36,6 +36,7 @@ export interface EventResponse {
   organizerId: string;
   createdAt: string;
   updatedAt: string;
+  imageUrl?: string | null;
 }
 
 export type EventStatusType = string;
@@ -175,5 +176,15 @@ export const eventService = {
   // Удалить своё мероприятие (Organizer или Admin)
   deleteEvent: async (eventId: string): Promise<void> => {
     await api.delete(`/Event/${eventId}`);
+  },
+
+  // Загрузить изображение для мероприятия (Organizer или Admin)
+  uploadEventImage: async (eventId: string, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await api.post<{ imageUrl: string }>(`/Event/upload-image/${eventId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.imageUrl;
   },
 };

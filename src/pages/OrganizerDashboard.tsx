@@ -63,6 +63,8 @@ const OrganizerDashboard: React.FC = () => {
   const [formData, setFormData] = useState<EventData>(defaultFormData);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const { hasRole, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -103,6 +105,8 @@ const OrganizerDashboard: React.FC = () => {
     setFormData(defaultFormData);
     setFormErrors({});
     setSubmitError(null);
+    setSelectedFile(null);
+    setUploadingImage(false);
     setFormOpen(true);
   };
 
@@ -136,6 +140,8 @@ const OrganizerDashboard: React.FC = () => {
     });
     setFormErrors({});
     setSubmitError(null);
+    setSelectedFile(null);
+    setUploadingImage(false);
     setFormOpen(true);
   };
 
@@ -144,6 +150,8 @@ const OrganizerDashboard: React.FC = () => {
     setEditingEvent(null);
     setFormErrors({});
     setSubmitError(null);
+    setSelectedFile(null);
+    setUploadingImage(false);
   };
 
   // ---- Валидация ----
@@ -249,22 +257,47 @@ const OrganizerDashboard: React.FC = () => {
     return value;
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    setSubmitError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setSubmitError(null);
     try {
-        const payload: EventData = {
+      const payload: EventData = {
         ...formData,
         Start: normalizeDate(formData.Start),
         End: normalizeDate(formData.End),
       };
+      let eventId: string;
       if (editingEvent) {
         await eventService.updateEvent(editingEvent.id, payload, dictionaries ?? undefined);
+        eventId = editingEvent.id;
       } else {
-        await eventService.createEvent(payload, dictionaries ?? undefined);
+        const createdEvent = await eventService.createEvent(payload, dictionaries ?? undefined);
+        eventId = createdEvent.id;
       }
+
+      // Загрузка изображения, если выбран файл
+      if (selectedFile) {
+        setUploadingImage(true);
+        try {
+          await eventService.uploadEventImage(eventId, selectedFile);
+        } catch (uploadErr: unknown) {
+          const uploadMsg = getApiErrorMessage(uploadErr);
+          console.error('[OrganizerDashboard] Image upload error:', uploadErr);
+          // Не блокируем закрытие формы — событие сохранено, просто сообщаем об ошибке
+          setSubmitError(`Мероприятие сохранено, но не удалось загрузить изображение: ${uploadMsg}`);
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       closeForm();
       fetchEvents();
     } catch (err: unknown) {
@@ -342,6 +375,9 @@ const OrganizerDashboard: React.FC = () => {
           <div className="events-list">
             {events.map(event => (
               <div key={event.id} className="event-card">
+                {event.imageUrl && (
+                  <img src={event.imageUrl} alt={event.Title} className="event-card-image" />
+                )}
                 <div className="event-card-header">
                   <h3 className="event-card-title">{event.Title}</h3>
                   <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
@@ -571,9 +607,35 @@ const OrganizerDashboard: React.FC = () => {
 
               <div className="form-actions">
                 <button type="button" onClick={closeForm} className="btn-cancel">Отмена</button>
-                <button type="submit">{editingEvent ? 'Сохранить' : 'Создать'}</button>
+                <button type="submit" disabled={uploadingImage}>{editingEvent ? 'Сохранить' : 'Создать'}{uploadingImage ? ' (загрузка…)' : ''}</button>
               </div>
             </form>
+
+            {/* Блок загрузки изображения */}
+            {editingEvent && editingEvent.imageUrl && (
+              <div className="image-preview-section">
+                <p><strong>Текущее изображение:</strong></p>
+                <img src={editingEvent.imageUrl} alt={formData.Title || 'Изображение'} className="event-image-preview" />
+              </div>
+            )}
+            <div className="form-group image-upload-group">
+              <label htmlFor="imageFile" className="file-label">
+                {editingEvent ? 'Заменить изображение (или оставить без изменений)' : 'Добавить изображение обложки'}
+                <span className="file-hint">JPG, PNG, GIF, WEBP · до 10 МБ</span>
+              </label>
+              <input
+                type="file"
+                id="imageFile"
+                accept=".jpg,.jpeg,.png,.gif,.webp"
+                onChange={handleFileChange}
+                className="file-input"
+              />
+              {selectedFile && (
+                <div className="file-selected">
+                  Выбран файл: <strong>{selectedFile.name}</strong>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
