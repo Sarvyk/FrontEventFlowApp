@@ -375,16 +375,13 @@ const OrganizerDashboard: React.FC = () => {
           <div className="events-list">
             {events.map(event => (
               <div key={event.id} className="event-card">
-                {event.imageUrl && (
-                  <img src={event.imageUrl} alt={event.Title} className="event-card-image" />
-                )}
-                <div className="event-card-header">
-                  <h3 className="event-card-title">{event.Title}</h3>
-                  <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
-                    {getStatusLabel(event.status)}
-                  </span>
+                <div className="event-card-image-wrap">
+                  {event.imageUrl && (
+                    <img src={event.imageUrl} alt={event.Title} className="event-card-image" />
+                  )}
                 </div>
-                <div className="event-card-body">
+                <div className="event-card-info">
+                  <h3 className="event-card-title">{event.Title}</h3>
                   <p><strong>Тип:</strong> {getTypeLabel(event.type)}</p>
                   <p><strong>Дата:</strong> {new Date(event.Start).toLocaleDateString('ru-RU')} — {new Date(event.End).toLocaleDateString('ru-RU')}</p>
                   <p><strong>Место:</strong> {event.City || event.Street ? `${event.City}${event.City && (event.Street || event.House || event.Apartment) ? ', ' : ''}${[event.Street, event.House, event.Apartment].filter(Boolean).join(', ')}` : 'Не указано'}</p>
@@ -392,7 +389,10 @@ const OrganizerDashboard: React.FC = () => {
                   <p><strong>Цена:</strong> {event.Price > 0 ? `${event.Price} руб.` : 'Бесплатно'}</p>
                   <p><strong>Участников (макс.):</strong> {event.maxParticipants}</p>
                 </div>
-                <div className="event-card-actions">
+                <div className="event-card-sidebar">
+                  <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
+                    {getStatusLabel(event.status)}
+                  </span>
                   <button onClick={() => openEditForm(event)} className="btn-edit">Редактировать</button>
                 </div>
               </div>

@@ -41,9 +41,12 @@
   background: white;
   border: 1px solid #eaeaea;
   border-radius: 12px;
-  padding: 20px;
+  padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  display: flex;
+  overflow: hidden;
+  align-items: stretch;
 }
 
 .event-card:hover {
@@ -51,18 +54,52 @@
   border-color: #667eea;
 }
 
-.event-card-header {
+/* Левый блок — картинка, растягивается на всё доступное место */
+.event-card-image-wrap {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: stretch;
+}
+
+.event-card-image {
+  flex: 1;
+  min-width: 0;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 12px 0 0 12px;
+  display: block;
+}
+
+/* Центральный блок — информация */
+.event-card-info {
+  flex: 0 0 45%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .event-card-title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #333;
-  margin: 0;
+  margin: 0 0 4px;
+}
+
+.event-card-info p {
+  margin: 4px 0;
+  color: #555;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card-info p:nth-child(3) {
+  white-space: normal;
+  overflow: visible;
 }
 
 .event-status-badge {
@@ -99,6 +136,7 @@
 
 .event-card-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 16px;
   padding-top: 12px;
@@ -106,7 +144,7 @@
 }
 
 .event-card-actions button {
-  width: auto;
+  width: 100%;
   padding: 8px 16px;
   font-size: 0.9rem;
   margin-top: 0;
@@ -297,14 +335,25 @@
   border-color: #dc3545 !important;
 }
 
-/* Изображение в карточке мероприятия */
-.event-card-image {
+/* Правый блок — статус и кнопки */
+.event-card-sidebar {
+  flex: 0 0 160px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  border-left: 1px solid #eee;
+}
+
+.event-card-sidebar .event-status-badge {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  display: block;
+  text-align: center;
+}
+
+.event-card-sidebar .btn-edit {
+  width: 100%;
 }
 
 /* Блок превью текущего изображения в форме */
@@ -369,11 +418,35 @@
     grid-template-columns: 1fr;
   }
 
-  .event-card-actions {
+  .event-card {
     flex-direction: column;
   }
 
-  .event-card-actions button {
+  .event-card-image {
+    width: 100%;
+    min-width: unset;
+    border-radius: 12px 12px 0 0;
+    height: 200px;
+  }
+
+  .event-card-info,
+  .event-card-sidebar {
+    flex: none;
+    width: 100%;
+  }
+
+  .event-card-sidebar {
+    border-left: none;
+    border-top: 1px solid #eee;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  .event-card-info p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
     width: 100%;
   }
 }

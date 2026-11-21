@@ -66,22 +66,31 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
         <p>Мероприятия не найдены</p>
       ) : (
         <>
-          <div className="events-grid">
+          <div className="events-list">
             {events.map(event => (
               <div key={event.id} className="event-card">
-                {event.imageUrl && (
-                  <img src={event.imageUrl} alt={event.title} className="event-card-image" />
-                )}
-                <h3>{event.title}</h3>
-                <p><strong>Тип:</strong> {event.type}</p>
-                <p><strong>Дата:</strong> {new Date(event.start).toLocaleDateString()}</p>
-                <p><strong>Место:</strong> {event.city}, {event.address}</p>
-                <p><strong>Описание:</strong> {event.description}</p>
-                <p><strong>Цена:</strong> {event.price > 0 ? `${event.price} руб.` : 'Бесплатно'}</p>
-                <p><strong>Участники:</strong> {event.currentParticipants}/{event.maxParticipants}</p>
-                {event.organizerName && (
-                  <p><strong>Организатор:</strong> {event.organizerName}</p>
-                )}
+                <div className="event-card-image-wrap">
+                  {event.imageUrl && (
+                    <img src={event.imageUrl} alt={event.title} className="event-card-image" />
+                  )}
+                </div>
+                <div className="event-card-info">
+                  <h3>{event.title}</h3>
+                  <p><strong>Тип:</strong> {event.type}</p>
+                  <p><strong>Дата:</strong> {new Date(event.start).toLocaleDateString()}</p>
+                  <p><strong>Место:</strong> {event.city}, {event.address}</p>
+                  <p><strong>Описание:</strong> {event.description}</p>
+                  <p><strong>Цена:</strong> {event.price > 0 ? `${event.price} руб.` : 'Бесплатно'}</p>
+                  <p><strong>Участники:</strong> {event.currentParticipants}/{event.maxParticipants}</p>
+                  {event.organizerName && (
+                    <p><strong>Организатор:</strong> {event.organizerName}</p>
+                  )}
+                </div>
+                <div className="event-card-sidebar">
+                  <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
+                    {event.status === 'Published' ? 'Опубликовано' : event.status === 'Cancelled' ? 'Отменено' : 'Черновик'}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
