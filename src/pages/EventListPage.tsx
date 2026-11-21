@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { eventListService, type EventsResponse } from '../services/eventListService';
+import { eventListService, type EventsApiResponse } from '../services/eventListService';
 import { type EventDto } from '../types/event';
 import './EventListPage.css';
 
@@ -10,6 +10,14 @@ interface EventListProps {
 
 const PAGE_SIZES = [5, 10, 20, 50];
 
+function getTypeLabel(type: string, typeDict: Record<string, string> | undefined): string {
+  return typeDict?.[type] ?? type;
+}
+
+function getStatusLabel(status: string, statusDict: Record<string, string> | undefined): string {
+  return statusDict?.[status] ?? status;
+}
+
 const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) => {
   const [events, setEvents] = useState<EventDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -17,14 +25,18 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(page);
   const [currentPageSize, setCurrentPageSize] = useState<number>(pageSize);
+  const [typeDict, setTypeDict] = useState<Record<string, string> | undefined>(undefined);
+  const [statusDict, setStatusDict] = useState<Record<string, string> | undefined>(undefined);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const response: EventsResponse = await eventListService.getEvents(currentPage, currentPageSize);
-        setEvents(response.items ?? []);
-        setTotalCount(response.totalCount ?? 0);
+        const response: EventsApiResponse = await eventListService.getEvents(currentPage, currentPageSize);
+        setEvents(response.data.items ?? []);
+        setTotalCount(response.data.totalCount ?? 0);
+        setTypeDict(response.dictionaries?.[0]);
+        setStatusDict(response.dictionaries?.[1]);
       } catch (err) {
         setError('Ошибка при загрузке мероприятий');
         console.error('Error fetching events:', err);
@@ -76,9 +88,10 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
                 </div>
                 <div className="event-card-info">
                   <h3>{event.title}</h3>
-                  <p><strong>Тип:</strong> {event.type}</p>
-                  <p><strong>Дата:</strong> {new Date(event.start).toLocaleDateString()}</p>
-                  <p><strong>Место:</strong> {event.city}, {event.address}</p>
+                  <p><strong>Тип:</strong> {getTypeLabel(event.type, typeDict)}</p>
+                  <p><strong>Дата:</strong> {new Date(event.start).toLocaleDateString('ru-RU')} — {new Date(event.end).toLocaleDateString('ru-RU')}</p>
+                  {event.address && <p><strong>Место:</strong> {event.city}, {event.address}</p>}
+                  {!event.address && <p><strong>Место:</strong> {event.city}</p>}
                   <p><strong>Описание:</strong> {event.description}</p>
                   <p><strong>Цена:</strong> {event.price > 0 ? `${event.price} руб.` : 'Бесплатно'}</p>
                   <p><strong>Участники:</strong> {event.currentParticipants}/{event.maxParticipants}</p>
@@ -88,7 +101,7 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
                 </div>
                 <div className="event-card-sidebar">
                   <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
-                    {event.status === 'Published' ? 'Опубликовано' : event.status === 'Cancelled' ? 'Отменено' : 'Черновик'}
+                    {getStatusLabel(event.status, statusDict)}
                   </span>
                 </div>
               </div>

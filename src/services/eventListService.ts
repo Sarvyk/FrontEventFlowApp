@@ -6,10 +6,15 @@ export interface EventsResponse {
   totalCount: number;
 }
 
+export interface EventsApiResponse {
+  data: EventsResponse;
+  dictionaries: [Record<string, string>, Record<string, string>];
+}
+
 export const eventListService = {
   // Получение списка мероприятий с пагинацией
-  getEvents: async (page: number = 0, pageSize: number = 10): Promise<EventsResponse> => {
-    const response = await api.get<EventsResponse>('/Event', {
+  getEvents: async (page: number = 0, pageSize: number = 10): Promise<EventsApiResponse> => {
+    const response = await api.get<EventsApiResponse>('/Event', {
       params: {
         page,
         pageSize
