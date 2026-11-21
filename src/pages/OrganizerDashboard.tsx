@@ -54,7 +54,6 @@ const OrganizerDashboard: React.FC = () => {
   const [dictionaries, setDictionaries] = useState<MyEventsApiResponse['dictionaries'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
@@ -275,24 +274,6 @@ const OrganizerDashboard: React.FC = () => {
     }
   };
 
-  // ---- Удаление ----
-  const handleDelete = async (event: EventResponse) => {
-    if (!confirm(`Удалить мероприятие «${event.Title}»?`)) return;
-
-    setActionLoading(event.id);
-    try {
-      await eventService.deleteEvent(event.id);
-      setEvents(prev => prev.filter(e => e.id !== event.id));
-      setTotalCount(prev => prev - 1);
-    } catch (err: unknown) {
-      const message = getApiErrorMessage(err);
-      setError(message);
-      console.error('[OrganizerDashboard] Delete error:', err);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     // HTML input names are camelCase for UX; map to PascalCase property keys expected by EventData
@@ -377,13 +358,6 @@ const OrganizerDashboard: React.FC = () => {
                 </div>
                 <div className="event-card-actions">
                   <button onClick={() => openEditForm(event)} className="btn-edit">Редактировать</button>
-                  <button
-                    onClick={() => handleDelete(event)}
-                    disabled={actionLoading === event.id}
-                    className="btn-delete"
-                  >
-                    {actionLoading === event.id ? '...' : 'Удалить'}
-                  </button>
                 </div>
               </div>
             ))}
