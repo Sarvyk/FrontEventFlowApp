@@ -181,8 +181,6 @@
 
 
 @media (max-width: 768px) {
-  .events-list {
-
   .event-card {
     flex-direction: column;
   }
