@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventListService, type EventsApiResponse } from '../services/eventListService';
 import { registrationService } from '../services/registrationService';
+import { paymentService } from '../services/paymentService';
 import { type EventDto } from '../types/event';
 import { useAuth } from '../contexts/AuthContext';
 import './EventListPage.css';
@@ -43,12 +44,16 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
     try {
       if (event.isUserRegistered) {
         await registrationService.unregisterFromEvent(event.id);
+        setEvents(prev => prev.map(e =>
+          e.id === event.id ? { ...e, isUserRegistered: false } : e
+        ));
       } else {
-        await registrationService.registerForEvent(event.id);
+        const ticketId = await registrationService.registerForEvent(event.id);
+        // Инициируем оплату и перенаправляем на экран оплаты
+        const payment = await paymentService.initiatePayment(ticketId);
+        sessionStorage.setItem(`payment_${payment.paymentId}`, JSON.stringify(payment));
+        navigate(payment.payUrl ?? `/pay/${payment.paymentId}`);
       }
-      setEvents(prev => prev.map(e =>
-        e.id === event.id ? { ...e, isUserRegistered: !e.isUserRegistered } : e
-      ));
     } catch (err) {
       console.error('Registration error:', err);
     } finally {

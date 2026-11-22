@@ -8,6 +8,7 @@ import OrganizerApplication from './pages/OrganizerApplication';
 import EventListPage from './pages/EventListPage';
 import AdminPanel from './pages/AdminPanel';
 import OrganizerDashboard from './pages/OrganizerDashboard';
+import FakePaymentPage from './pages/FakePaymentPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import './App.css';
@@ -45,6 +46,7 @@ function App() {
                   <OrganizerDashboard />
                 </ProtectedRoute>
               } />
+              <Route path="/pay/:paymentId" element={<FakePaymentPage />} />
             </Routes>
           </main>
         </div>

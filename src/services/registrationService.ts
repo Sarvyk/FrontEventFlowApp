@@ -8,9 +8,9 @@ export interface RegistrationResponse {
 }
 
 export const registrationService = {
-  // Регистрация на мероприятие
-  registerForEvent: async (eventId: string): Promise<RegistrationResponse> => {
-    const response = await api.post(`/Registration/${eventId}`);
+  // Регистрация на мероприятие — возвращает ticketId
+  registerForEvent: async (eventId: string): Promise<string> => {
+    const response = await api.post<string>(`/Registration/${eventId}`);
     return response.data;
   },
 
