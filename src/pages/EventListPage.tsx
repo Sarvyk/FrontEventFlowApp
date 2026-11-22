@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { eventListService, type EventsApiResponse } from '../services/eventListService';
+import { registrationService } from '../services/registrationService';
 import { type EventDto } from '../types/event';
+import { useAuth } from '../contexts/AuthContext';
 import './EventListPage.css';
 
 interface EventListProps {
@@ -19,6 +22,8 @@ function getStatusLabel(status: string, statusDict: Record<string, string> | und
 }
 
 const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [events, setEvents] = useState<EventDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -27,6 +32,29 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
   const [currentPageSize, setCurrentPageSize] = useState<number>(pageSize);
   const [typeDict, setTypeDict] = useState<Record<string, string> | undefined>(undefined);
   const [statusDict, setStatusDict] = useState<Record<string, string> | undefined>(undefined);
+  const [registerLoading, setRegisterLoading] = useState<string | null>(null);
+
+  const handleRegister = async (event: EventDto) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setRegisterLoading(event.id);
+    try {
+      if (event.isUserRegistered) {
+        await registrationService.unregisterFromEvent(event.id);
+      } else {
+        await registrationService.registerForEvent(event.id);
+      }
+      setEvents(prev => prev.map(e =>
+        e.id === event.id ? { ...e, isUserRegistered: !e.isUserRegistered } : e
+      ));
+    } catch (err) {
+      console.error('Registration error:', err);
+    } finally {
+      setRegisterLoading(null);
+    }
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -103,6 +131,19 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
                   <span className={`event-status-badge ${event.status === 'Published' ? 'published' : event.status === 'Cancelled' ? 'cancelled' : 'draft'}`}>
                     {getStatusLabel(event.status, statusDict)}
                   </span>
+                  {event.status === 'Published' && (
+                    event.isUserRegistered ? (
+                      <span className="event-registered-text">Уже зарегистрирован</span>
+                    ) : (
+                      <button
+                        className="event-register-btn"
+                        disabled={registerLoading === event.id}
+                        onClick={() => handleRegister(event)}
+                      >
+                        {registerLoading === event.id ? 'Загрузка...' : 'Зарегистрироваться'}
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             ))}

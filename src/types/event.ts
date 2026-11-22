@@ -15,5 +15,6 @@ export interface EventDto {
   imageUrl: string | null;
   organizerName: string;
   isPublished: boolean;
+  isUserRegistered: boolean;
   createdAt: string;
 }
