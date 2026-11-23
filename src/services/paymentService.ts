@@ -10,7 +10,7 @@ export const paymentService = {
 
   // Подтвердить оплату — переводит платёж в Processing
   confirmPayment: async (paymentId: string): Promise<PaymentDto> => {
-    const response = await api.post<PaymentDto>(`/payments/${paymentId}/confirm`);
+    const response = await api.post<PaymentDto>(`/payments/${paymentId}/confirm`, {});
     return response.data;
   },
 
@@ -22,7 +22,7 @@ export const paymentService = {
 
   // Отменить оплату
   cancelPayment: async (paymentId: string): Promise<void> => {
-    await api.post(`/payments/${paymentId}/cancel`);
+    await api.post(`/payments/${paymentId}/cancel`, {});
   },
 
   // Получить список своих платежей

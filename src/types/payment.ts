@@ -1,4 +1,4 @@
-export type PaymentStatus = 'Pending' | 'Processing' | 'Confirmed' | 'Cancelled' | 'Returned';
+export type PaymentStatus = 'Ожидание' | 'Обработка' | 'Подтверждена' | 'Отменена' | 'Возврат';
 
 export interface PaymentDto {
   id: string;

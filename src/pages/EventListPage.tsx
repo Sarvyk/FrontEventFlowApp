@@ -34,6 +34,7 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
   const [typeDict, setTypeDict] = useState<Record<string, string> | undefined>(undefined);
   const [statusDict, setStatusDict] = useState<Record<string, string> | undefined>(undefined);
   const [registerLoading, setRegisterLoading] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<Record<string, string>>({});
 
   const handleRegister = async (event: EventDto) => {
     if (!isAuthenticated) {
@@ -41,6 +42,7 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
       return;
     }
     setRegisterLoading(event.id);
+    setRegisterError(prev => ({ ...prev, [event.id]: '' }));
     try {
       if (event.isUserRegistered) {
         await registrationService.unregisterFromEvent(event.id);
@@ -54,7 +56,29 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
         sessionStorage.setItem(`payment_${payment.id}`, JSON.stringify(payment));
         navigate(payment.payUrl ?? `/pay/${payment.id}`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      let message = '';
+      const axiosErr = err as { response?: { status?: number; data?: unknown } };
+      console.error('Registration error raw:', axiosErr.response?.data);
+      if (axiosErr.response?.data) {
+        const d = axiosErr.response.data as Record<string, unknown>;
+        // Пробуем разные форматы ответа ASP.NET Core: ProblemDetails, ValidationProblemDetails, кастомный
+        message = (d.message as string)
+          ?? (d.detail as string)
+          ?? (d.title as string)
+          ?? (Array.isArray(d.errors) ? (d.errors as string[]).join('\n') : '')
+          ?? ((typeof d.errors === 'object' && d.errors !== null)
+            ? Object.values(d.errors as Record<string, string[]>).flat().join('\n')
+            : '');
+        // Если ничего не нашли — берём весь body как строку
+        if (!message) {
+          message = typeof axiosErr.response.data === 'string'
+            ? axiosErr.response.data
+            : JSON.stringify(axiosErr.response.data);
+        }
+      }
+      if (!message) message = 'Не удалось зарегистрироваться. Попробуйте позже.';
+      setRegisterError(prev => ({ ...prev, [event.id]: message }));
       console.error('Registration error:', err);
     } finally {
       setRegisterLoading(null);
@@ -138,15 +162,29 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
                   </span>
                   {event.status === 'Published' && (
                     event.isUserRegistered ? (
-                      <span className="event-registered-text">Уже зарегистрирован</span>
+                      <>
+                        <button
+                          className="event-unregister-btn"
+                          disabled={registerLoading === event.id}
+                          onClick={() => handleRegister(event)}
+                        >
+                          {registerLoading === event.id ? 'Загрузка...' : 'Отменить регистрацию'}
+                        </button>
+                        <span className="event-registered-text">Уже зарегистрирован</span>
+                      </>
                     ) : (
-                      <button
-                        className="event-register-btn"
-                        disabled={registerLoading === event.id}
-                        onClick={() => handleRegister(event)}
-                      >
-                        {registerLoading === event.id ? 'Загрузка...' : 'Зарегистрироваться'}
-                      </button>
+                      <>
+                        <button
+                          className="event-register-btn"
+                          disabled={registerLoading === event.id}
+                          onClick={() => handleRegister(event)}
+                        >
+                          {registerLoading === event.id ? 'Загрузка...' : 'Зарегистрироваться'}
+                        </button>
+                        {registerError[event.id] && (
+                          <span className="event-register-error">{registerError[event.id]}</span>
+                        )}
+                      </>
                     )
                   )}
                 </div>

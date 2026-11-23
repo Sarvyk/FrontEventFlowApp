@@ -44,9 +44,12 @@ const FakePaymentPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(() => getStoredPayment(paymentId) === null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<boolean>(false);
+  const [confirmed, setConfirmed] = useState<boolean>(false);
 
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<number>(0);
+
+  const hasAttemptedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -55,16 +58,25 @@ const FakePaymentPage: React.FC = () => {
       return;
     }
 
-    // Если нет начальных данных — значит ссылка невалидна или истёк session
-    if (!payment && paymentId) {
-      setError('Платёж не найден. Пожалуйста, зарегистрируйтесь на мероприятие заново.');
-      setLoading(false);
+    // Если нет начальных данных — пробуем получить через API (один раз за сессию)
+    if (!payment && paymentId && !hasAttemptedRef.current && !error) {
+      hasAttemptedRef.current = true;
+      setLoading(true);
+      paymentService.getPayment(paymentId)
+        .then((data) => {
+          setPayment(data);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError('Платёж не найден. Пожалуйста, зарегистрируйтесь на мероприятие заново.');
+          setLoading(false);
+        });
     }
 
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
-  }, [paymentId, isAuthenticated, isLoadingAuth, navigate, payment]);
+  }, [paymentId, isAuthenticated, isLoadingAuth, navigate, error]);
 
   const startPolling = () => {
     elapsedRef.current = 0;
@@ -76,7 +88,7 @@ const FakePaymentPage: React.FC = () => {
         const updated = await paymentService.getPayment(paymentId);
         setPayment(updated);
 
-        if (updated.status === 'Confirmed') {
+        if (updated.status === 'Подтверждена') {
           if (pollTimerRef.current) clearInterval(pollTimerRef.current);
           loadEventTitle(updated.ticketId, setEventTitle);
         } else if (elapsedRef.current >= MAX_POLL_SECONDS) {
@@ -95,6 +107,7 @@ const FakePaymentPage: React.FC = () => {
     try {
       const data = await paymentService.confirmPayment(paymentId);
       setPayment(data);
+      setConfirmed(true);
       sessionStorage.removeItem(`payment_${paymentId}`);
       startPolling();
     } catch (err: unknown) {
@@ -169,7 +182,7 @@ const FakePaymentPage: React.FC = () => {
   }
 
   // Успешная оплата
-  if (payment.status === 'Confirmed') {
+  if (payment.status === 'Подтверждена') {
     return (
       <div className="payment-page">
         <div className="payment-container payment-success">
@@ -189,38 +202,53 @@ const FakePaymentPage: React.FC = () => {
   }
 
   // Processing — показываем экран обработки
-  if (payment.status === 'Processing') {
+  if (payment.status === 'Обработка') {
     return (
       <div className="payment-page">
         <div className="payment-container payment-processing">
           <div className="spinner" />
           <h2>Обработка...</h2>
           <p>Платёж обрабатывается. Это займёт несколько секунд.</p>
-          <p className="hint">Не закрывайте эту страницу</p>
         </div>
       </div>
     );
   }
 
-  // Pending — показываем кнопку подтверждения
+  // Pending — показываем кнопку подтверждения или данные платежа после нажатия
   return (
     <div className="payment-page">
       <div className="payment-container">
         <h2>Оплата мероприятия</h2>
-        <div className="payment-summary">
-          <p><strong>Сумма:</strong> {payment.price} руб.</p>
-          <p><strong>Статус:</strong> Ожидает оплаты</p>
-        </div>
-        <button
-          className="confirm-pay-btn"
-          disabled={confirming}
-          onClick={handleConfirm}
-        >
-          {confirming ? 'Обработка...' : 'Подтвердить оплату'}
-        </button>
-        <button className="back-btn" onClick={handleCancel}>
-          Отмена
-        </button>
+        {confirmed ? (
+          <>
+            <div className="payment-summary payment-details">
+              <p><strong>ID платежа:</strong> {payment.id}</p>
+              <p><strong>ID билета:</strong> {payment.ticketId}</p>
+              <p><strong>ID пользователя:</strong> {payment.userId}</p>
+              <p><strong>Сумма:</strong> {payment.price} руб.</p>
+              <p><strong>Статус:</strong> {payment.status}</p>
+              <p><strong>Дата создания:</strong> {new Date(payment.paymentCreationDate).toLocaleString('ru-RU')}</p>
+            </div>
+            <div className="spinner" />
+          </>
+        ) : (
+          <>
+            <div className="payment-summary">
+              <p><strong>Сумма:</strong> {payment.price} руб.</p>
+              <p><strong>Статус:</strong> Ожидает оплаты</p>
+            </div>
+            <button
+              className="confirm-pay-btn"
+              disabled={confirming}
+              onClick={handleConfirm}
+            >
+              {confirming ? 'Обработка...' : 'Подтвердить оплату'}
+            </button>
+            <button className="back-btn" onClick={handleCancel}>
+              Отмена
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
