@@ -25,10 +25,12 @@ const HomePage: React.FC = () => {
           
           <a href="#" className="feature-card-link" onClick={(e) => {
             e.preventDefault();
-            if (hasRole('Organizer')) {
+            if (!isAuthenticated) {
+              navigate('/login');
+            } else if (hasRole('Organizer')) {
               navigate('/organizer/dashboard');
             } else {
-              navigate('/login');
+              navigate('/profile');
             }
           }}>
             <div className="feature-card">
