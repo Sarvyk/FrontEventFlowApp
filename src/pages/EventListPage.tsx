@@ -51,8 +51,8 @@ const EventListPage: React.FC<EventListProps> = ({ page = 0, pageSize = 10 }) =>
         const ticketId = await registrationService.registerForEvent(event.id);
         // Инициируем оплату и перенаправляем на экран оплаты
         const payment = await paymentService.initiatePayment(ticketId);
-        sessionStorage.setItem(`payment_${payment.paymentId}`, JSON.stringify(payment));
-        navigate(payment.payUrl ?? `/pay/${payment.paymentId}`);
+        sessionStorage.setItem(`payment_${payment.id}`, JSON.stringify(payment));
+        navigate(payment.payUrl ?? `/pay/${payment.id}`);
       }
     } catch (err) {
       console.error('Registration error:', err);

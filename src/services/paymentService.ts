@@ -20,6 +20,11 @@ export const paymentService = {
     return response.data;
   },
 
+  // Отменить оплату
+  cancelPayment: async (paymentId: string): Promise<void> => {
+    await api.post(`/payments/${paymentId}/cancel`);
+  },
+
   // Получить список своих платежей
   getMyPayments: async (): Promise<PaymentDto[]> => {
     const response = await api.get<PaymentDto[]>('/payments/my');

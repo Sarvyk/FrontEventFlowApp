@@ -109,6 +109,26 @@ const FakePaymentPage: React.FC = () => {
     }
   };
 
+  const handleCancel = async () => {
+    if (!paymentId) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    try {
+      await paymentService.cancelPayment(paymentId);
+      sessionStorage.removeItem(`payment_${paymentId}`);
+      navigate('/');
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { status?: number }; message?: string };
+      if (axiosError.response?.status === 401) {
+        navigate('/login');
+      } else {
+        setError(axiosError.message || 'Ошибка при отмене оплаты');
+      }
+    }
+  };
+
   const isLoading = isLoadingAuth || loading;
 
   if (isLoading) {
@@ -198,7 +218,7 @@ const FakePaymentPage: React.FC = () => {
         >
           {confirming ? 'Обработка...' : 'Подтвердить оплату'}
         </button>
-        <button className="back-btn" onClick={() => navigate('/events')}>
+        <button className="back-btn" onClick={handleCancel}>
           Отмена
         </button>
       </div>

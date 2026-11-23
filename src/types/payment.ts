@@ -2,15 +2,12 @@ export type PaymentStatus = 'Pending' | 'Processing' | 'Confirmed' | 'Cancelled'
 
 export interface PaymentDto {
   id: string;
-  paymentId: string;
   ticketId: string;
   userId: string;
   price: number;
   status: PaymentStatus;
   payUrl?: string | null;
   paymentCreationDate: string;
-  lastModificationDate: string | null;
-  paidAt: string | null;
 }
 
 export type TicketStatus = 'Pending' | 'Confirmed' | 'Cancelled' | 'Expired';
